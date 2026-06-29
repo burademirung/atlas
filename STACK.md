@@ -5,7 +5,7 @@ described in a design doc). This file is the map.
 
 | # | Required skill | Where it lives | Evidence it's real |
 |---|---|---|---|
-| 1 | **Python + FastAPI** — build a backend from scratch | [`apps/api/`](apps/api/) | Async FastAPI, layered routers→services→repositories, Pydantic v2, 19 passing tests (`uv run pytest`), `ruff` + `mypy --strict` clean. |
+| 1 | **Python + FastAPI** — build a backend from scratch | [`apps/api/`](apps/api/) | Async FastAPI, layered routers→services→repositories, Pydantic v2, 24 passing tests (`uv run pytest`), `ruff` + `mypy --strict` clean. |
 | 2 | **PostgreSQL** — as a production database | [`apps/api/src/atlas_api/db/models.py`](apps/api/src/atlas_api/db/models.py), [`migrations/`](apps/api/src/atlas_api/migrations/) | SQLAlchemy 2.0 async, 7-table schema with a join table + CASCADE FKs, Alembic migration, tested against real Postgres via testcontainers. |
 | 3 | **Agentic AI** — multi-agent systems with LangGraph / Claude | [`apps/api/src/atlas_api/agents/`](apps/api/src/atlas_api/agents/) | A LangGraph `StateGraph`: **plan → [search ×N in parallel via `Send`] → verify → write**, driven by Claude (`langchain-anthropic`), with a pluggable `SearchProvider` (Tavily + stub). Deterministic tests in `tests/test_agents.py`. Also deployed live (Claude + web search) in [`apps/cloudflare/`](apps/cloudflare/). |
 | 4 | **Terraform** — author cloud infrastructure as code | [`infra/terraform/`](infra/terraform/) | Modular AWS + Cloudflare: `modules/{network,eks,rds,elasticache,ecr,iam,s3,cloudflare}`, separate root config + S3-native-locked state per env (`envs/dev`, `envs/prod`). `terraform fmt` clean. |

@@ -1,6 +1,8 @@
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 
+from arq import create_pool
+from arq.connections import RedisSettings
 from fastapi import FastAPI
 from redis.asyncio import Redis
 from sqlalchemy.ext.asyncio import AsyncEngine
@@ -14,6 +16,7 @@ from atlas_api.errors import install_error_handlers
 from atlas_api.health.router import router as health_router
 from atlas_api.logging import configure_logging
 from atlas_api.middleware import request_id_middleware
+from atlas_api.runs.router import router as runs_router
 
 
 def create_app(engine: AsyncEngine | None = None, redis_url: str | None = None) -> FastAPI:
@@ -31,9 +34,11 @@ def create_app(engine: AsyncEngine | None = None, redis_url: str | None = None) 
         app.state.engine = engine or create_engine(settings.database_url)
         app.state.sessionmaker = session_factory(app.state.engine)
         app.state.redis = Redis.from_url(redis_url or settings.redis_url, decode_responses=True)
+        app.state.arq = await create_pool(RedisSettings.from_dsn(redis_url or settings.redis_url))
         try:
             yield
         finally:
+            await app.state.arq.aclose()
             await app.state.redis.aclose()
             if engine is None:
                 await app.state.engine.dispose()
@@ -43,6 +48,7 @@ def create_app(engine: AsyncEngine | None = None, redis_url: str | None = None) 
     install_error_handlers(app)
     app.include_router(health_router)
     app.include_router(auth_router, prefix="/v1")
+    app.include_router(runs_router, prefix="/v1")
     return app
 
 

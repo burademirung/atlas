@@ -58,3 +58,24 @@ services:
       JWT_SECRET: dev-secret-change-me-32-chars-min!
       ENVIRONMENT: dev
     ports: ["8080:8080"]
+
+  # arq worker — runs the LangGraph research graph, streams progress to Redis,
+  # persists results to Postgres. Needs ANTHROPIC_API_KEY to call Claude.
+  worker:
+    build: ./apps/api
+    depends_on:
+      pgbouncer:
+        condition: service_started
+      redis:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    environment:
+      DATABASE_URL: postgresql+asyncpg://atlas:atlas@pgbouncer:6432/atlas
+      REDIS_URL: redis://redis:6379/0
+      JWT_SECRET: dev-secret-change-me-32-chars-min!
+      ENVIRONMENT: dev
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      TAVILY_API_KEY: ${TAVILY_API_KEY:-}
+      RESEARCH_MODEL: ${RESEARCH_MODEL:-claude-opus-4-8}
+    command: ["uv", "run", "arq", "atlas_api.worker.WorkerSettings"]
