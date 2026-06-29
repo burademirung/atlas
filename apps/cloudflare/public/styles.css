@@ -151,6 +151,7 @@ body {
   gap: 24px;
   align-items: start;
 }
+.stage[hidden] { display: none; }
 .panel-title {
   font-size: 12px;
   text-transform: uppercase;

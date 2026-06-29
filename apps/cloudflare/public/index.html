@@ -11,13 +11,25 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,900&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,900&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap"
       rel="stylesheet"
     />
     <link rel="stylesheet" href="/styles.css" />
+    <link rel="stylesheet" href="/architecture.css" />
   </head>
   <body>
     <div class="grain" aria-hidden="true"></div>
+
+    <div class="adbar">
+      <span class="adbar-in">
+        Built by <strong>Vladimir Kamenev</strong>
+        <span class="adbar-sep">·</span>
+        <a href="tel:+15123369618">512-336-9618</a>
+        <span class="adbar-sep">·</span>
+        <a href="mailto:burademirung@gmail.com">burademirung@gmail.com</a>
+      </span>
+    </div>
+
     <header class="topbar">
       <div class="brand">
         <span class="mark">◆</span>
@@ -25,6 +37,7 @@
         <span class="sub">Deep Research Studio</span>
       </div>
       <div class="meta">
+        <a class="pill ghost" href="#how">How it works ↓</a>
         <span class="pill" id="modelPill">Claude Opus 4.8 · web search</span>
         <a class="pill ghost" href="https://github.com" target="_blank" rel="noreferrer">on Cloudflare</a>
       </div>
@@ -90,10 +103,275 @@
       </aside>
     </main>
 
+    <!-- ════════════════ HOW IT WORKS — animated 3D explainer ════════════════ -->
+    <div class="explain" id="how">
+      <div class="ex-lead">
+        <p class="ex-eyebrow">A guided tour</p>
+        <h2 class="ex-title">How a question becomes <em>a cited answer.</em></h2>
+        <p class="ex-lede">
+          Atlas reads the live web, reasons over what it finds, and writes back a sourced report — in
+          seconds. Here is exactly what happens in between, one moving part at a time.
+        </p>
+      </div>
+
+      <!-- CAST -->
+      <section class="ex-cast">
+        <div class="ex-head">
+          <p class="ex-eyebrow">First, the cast</p>
+          <h3>Six parts, in plain language</h3>
+        </div>
+        <div class="cast-grid">
+          <article class="cast-card" style="--i: 0">
+            <div class="cc-ico">🧭</div><h4>Your browser</h4>
+            <p class="analogy">The person at the counter who places the order.</p>
+            <p class="tech">Sends your question, then shows the answer as it streams in.</p>
+          </article>
+          <article class="cast-card" style="--i: 1">
+            <div class="cc-ico">🛰️</div><h4>Cloudflare Worker</h4>
+            <p class="analogy">A receptionist with a desk in 300+ cities at once.</p>
+            <p class="tech">Code at the network edge, nearest to you. Routes the request.</p>
+          </article>
+          <article class="cast-card" style="--i: 2">
+            <div class="cc-ico">🧠</div><h4>Claude Opus 4.8</h4>
+            <p class="analogy">The researcher who actually reads and reasons.</p>
+            <p class="tech">The AI model. Decides what to look up, then writes the report.</p>
+          </article>
+          <article class="cast-card" style="--i: 3">
+            <div class="cc-ico">🔎</div><h4>Web search tool</h4>
+            <p class="analogy">The researcher's library card.</p>
+            <p class="tech">Lets Claude look things up live and bring back real sources.</p>
+          </article>
+          <article class="cast-card" style="--i: 4">
+            <div class="cc-ico">📡</div><h4>Live stream (SSE)</h4>
+            <p class="analogy">A radio broadcast — you hear it forming, word by word.</p>
+            <p class="tech">Server-Sent Events push each update instead of making you wait.</p>
+          </article>
+          <article class="cast-card" style="--i: 5">
+            <div class="cc-ico">🗄️</div><h4>D1 database</h4>
+            <p class="analogy">The filing cabinet where finished reports are kept.</p>
+            <p class="tech">Cloudflare's edge SQL store. Every run is saved for later.</p>
+          </article>
+        </div>
+      </section>
+
+      <!-- JOURNEY (sticky 3D scrollytelling) -->
+      <section class="ex-journey">
+        <div class="ex-head center">
+          <p class="ex-eyebrow">The journey</p>
+          <h3>Follow one question through the machine</h3>
+          <p class="ex-sub">Watch the request travel. Scroll, or step through it yourself.</p>
+        </div>
+
+        <div class="scrolly">
+          <div class="stage-wrap">
+            <div class="stage" id="stage3d" data-step="1">
+              <div class="stage-tilt" id="stageTilt">
+                <svg class="wires" id="wires" viewBox="0 0 800 600" preserveAspectRatio="xMidYMid meet">
+                  <defs>
+                    <filter id="glow" x="-60%" y="-60%" width="220%" height="220%">
+                      <feGaussianBlur stdDeviation="6" result="b" />
+                      <feMerge><feMergeNode in="b" /><feMergeNode in="SourceGraphic" /></feMerge>
+                    </filter>
+                  </defs>
+                  <path id="w-you-edge" class="wire" d="M150,170 C220,210 230,250 300,290" />
+                  <path id="w-edge-claude" class="wire" d="M340,275 C420,235 430,210 480,195" />
+                  <path id="w-claude-web" class="wire" d="M540,175 C610,150 630,135 680,120" />
+                  <path id="w-stream" class="wire" d="M680,120 C600,170 560,210 500,205 C430,235 360,285 305,300 C240,250 200,205 150,180" />
+                  <path id="w-edge-d1" class="wire" d="M310,310 C370,360 415,420 462,452" />
+                  <circle id="packet" class="packet" r="7" filter="url(#glow)" />
+                  <g id="particles"></g>
+                </svg>
+
+                <div class="node" data-node="you" style="--x: 18.75%; --y: 28.33%">
+                  <div class="node-block"><span class="ni">🧭</span></div>
+                  <div class="node-label"><b>You</b><i>browser</i></div>
+                </div>
+                <div class="node" data-node="edge" style="--x: 37.5%; --y: 50%">
+                  <div class="node-block edge"><span class="ni">🛰️</span></div>
+                  <div class="node-label"><b>Cloudflare Worker</b><i>the edge</i></div>
+                </div>
+                <div class="node" data-node="claude" style="--x: 63.75%; --y: 32.5%">
+                  <div class="node-block orb"><span class="pulse"></span><span class="ni">🧠</span></div>
+                  <div class="node-label"><b>Claude Opus 4.8</b><i>the researcher</i></div>
+                </div>
+                <div class="node node-web" data-node="web" style="--x: 85%; --y: 20%">
+                  <div class="web-tiles"><span></span><span></span><span></span><span></span></div>
+                  <div class="node-label"><b>The live web</b><i>real sources</i></div>
+                </div>
+                <div class="node" data-node="d1" style="--x: 57.75%; --y: 75.33%">
+                  <div class="node-block db"><span class="ni">🗄️</span></div>
+                  <div class="node-label"><b>D1 database</b><i>saved runs</i></div>
+                </div>
+
+                <div class="mock-report" id="mockReport" aria-hidden="true">
+                  <div class="mr-head"><span class="mdot"></span> report.md</div>
+                  <div class="mr-body"></div>
+                </div>
+              </div>
+            </div>
+
+            <div class="stage-controls" role="group" aria-label="Walkthrough controls">
+              <button id="prevStep" class="step-btn" aria-label="Previous step">‹</button>
+              <div class="step-dots" id="stepDots"></div>
+              <button id="nextStep" class="step-btn" aria-label="Next step">›</button>
+            </div>
+          </div>
+
+          <div class="steps" id="steps">
+            <article class="step" data-step="1">
+              <span class="step-no">01</span><h4>You ask a question.</h4>
+              <p>You type something like <em>“What are the newest EV battery chemistries?”</em> and hit
+              run. Your browser packages it up and sends it off.</p>
+              <p class="step-tech">Browser → <code>POST /api/research</code></p>
+            </article>
+            <article class="step" data-step="2">
+              <span class="step-no">02</span><h4>The nearest city catches it.</h4>
+              <p>The request lands at a Cloudflare Worker in the data center closest to you — one of
+              300+ worldwide. No far-away server to wait on.</p>
+              <p class="step-tech">Cloudflare edge · runs in milliseconds, near the user</p>
+            </article>
+            <article class="step" data-step="3">
+              <span class="step-no">03</span><h4>The Worker briefs the researcher.</h4>
+              <p>The Worker hands your question to Claude along with instructions: <em>research this,
+              cite your sources, write it clearly.</em></p>
+              <p class="step-tech">Worker → Anthropic API · <code>claude-opus-4-8</code></p>
+            </article>
+            <article class="step" data-step="4">
+              <span class="step-no">04</span><h4>Claude decides to look it up.</h4>
+              <p>Instead of guessing from memory, Claude chooses to search — like deciding to open a
+              browser and check. It writes its own search queries.</p>
+              <p class="step-tech">Native <code>web_search</code> tool · up to 5 searches</p>
+            </article>
+            <article class="step" data-step="5">
+              <span class="step-no">05</span><h4>It reads the live web.</h4>
+              <p>Real pages come back — official docs, news, references. Claude pulls the relevant
+              passages and tracks where each fact came from.</p>
+              <p class="step-tech">Live results · each becomes a numbered citation</p>
+            </article>
+            <article class="step" data-step="6">
+              <span class="step-no">06</span><h4>The answer streams back.</h4>
+              <p>Every word flows back the moment it's written — Claude → Worker → your browser — like
+              a live broadcast, not a long wait.</p>
+              <p class="step-tech">Server-Sent Events (SSE) · token-by-token</p>
+            </article>
+            <article class="step" data-step="7">
+              <span class="step-no">07</span><h4>Your screen fills in, live.</h4>
+              <p>You watch the pipeline light up and the cited report assemble itself — sources in the
+              margin, footnotes linking back to them.</p>
+              <p class="step-tech">Rendered safely · model output escaped, then formatted</p>
+            </article>
+            <article class="step" data-step="8">
+              <span class="step-no">08</span><h4>It's saved for next time.</h4>
+              <p>The finished report and its sources drop into the filing cabinet, so you can reopen
+              any past run from your history.</p>
+              <p class="step-tech">Cloudflare D1 · <code>runs</code> + <code>sources</code> tables</p>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <!-- BLUEPRINT -->
+      <section class="ex-blueprint">
+        <div class="ex-head center">
+          <p class="ex-eyebrow">The whole picture</p>
+          <h3>The architecture, at a glance</h3>
+          <p class="ex-sub">The same system, zoomed out. Flip between what's running today and the
+          full production-grade design.</p>
+        </div>
+
+        <div class="bp-toggle" role="tablist" aria-label="Architecture view">
+          <button role="tab" id="bp-live" class="active" aria-selected="true">⚡ Live on Cloudflare</button>
+          <button role="tab" id="bp-prod" aria-selected="false">🏛️ Production blueprint</button>
+        </div>
+
+        <div class="bp-stage" id="bpStage" data-view="live">
+          <div class="bp-view bp-view-live">
+            <div class="bp-lane">
+              <span class="bp-lane-label">Your device</span>
+              <div class="bp-box">🧭 Browser (SPA)</div>
+            </div>
+            <div class="bp-arrow">HTTPS · SSE</div>
+            <div class="bp-lane">
+              <span class="bp-lane-label">Cloudflare edge</span>
+              <div class="bp-box accent">🛰️ Worker — API + static site</div>
+              <div class="bp-box">🗄️ D1 — SQLite (runs, sources)</div>
+            </div>
+            <div class="bp-arrow">HTTPS</div>
+            <div class="bp-lane">
+              <span class="bp-lane-label">Anthropic</span>
+              <div class="bp-box">🧠 Claude Opus 4.8</div>
+              <div class="bp-box">🔎 web_search → live web</div>
+            </div>
+          </div>
+
+          <div class="bp-view bp-view-prod" hidden>
+            <div class="bp-lane">
+              <span class="bp-lane-label">Edge — Cloudflare</span>
+              <div class="bp-box">🧭 React SPA</div>
+              <div class="bp-box">🛡️ Edge auth · rate-limit · WAF</div>
+            </div>
+            <div class="bp-arrow">HTTPS · SSE</div>
+            <div class="bp-lane wide">
+              <span class="bp-lane-label">AWS — Kubernetes (EKS)</span>
+              <div class="bp-row">
+                <div class="bp-box accent">⚙️ FastAPI (API pods)</div>
+                <div class="bp-box accent">🤖 Agent workers (LangGraph)</div>
+              </div>
+              <div class="bp-row">
+                <div class="bp-box">🐘 PostgreSQL (RDS)</div>
+                <div class="bp-box">⚡ Redis / arq queue</div>
+                <div class="bp-box">📦 S3 · exports</div>
+              </div>
+              <div class="bp-row">
+                <div class="bp-box">🧠 Claude + Tavily</div>
+                <div class="bp-box">📈 OTel · Prometheus</div>
+              </div>
+            </div>
+            <div class="bp-arrow">provisions / ships</div>
+            <div class="bp-lane">
+              <span class="bp-lane-label">Platform</span>
+              <div class="bp-box">🌍 Terraform (IaC)</div>
+              <div class="bp-box">🚀 GitHub Actions (CI/CD)</div>
+            </div>
+          </div>
+        </div>
+        <p class="bp-note" id="bpNote">
+          Running today: a single Cloudflare Worker, Claude Opus 4.8 with live web search, and a D1
+          database. No servers to manage.
+        </p>
+      </section>
+
+      <!-- STACK -->
+      <section class="ex-stack">
+        <div class="ex-head center">
+          <p class="ex-eyebrow">Under the hood</p>
+          <h3>The full toolkit</h3>
+          <p class="ex-sub">Every technology the system is built on — and what each one is for.</p>
+        </div>
+        <div class="tech-grid">
+          <article class="tech-card" tabindex="0"><h5>Cloudflare Workers</h5><p>Runs the code at the edge, close to every user.</p></article>
+          <article class="tech-card" tabindex="0"><h5>Claude Opus 4.8</h5><p>The reasoning model that researches and writes.</p></article>
+          <article class="tech-card" tabindex="0"><h5>Cloudflare D1</h5><p>SQLite database at the edge for saved runs.</p></article>
+          <article class="tech-card" tabindex="0"><h5>Python · FastAPI</h5><p>The production backend API, async and typed.</p></article>
+          <article class="tech-card" tabindex="0"><h5>PostgreSQL</h5><p>The production database of record.</p></article>
+          <article class="tech-card" tabindex="0"><h5>Kubernetes (EKS)</h5><p>Runs API and agent workers, scales on demand.</p></article>
+          <article class="tech-card" tabindex="0"><h5>Terraform</h5><p>The whole cloud, defined as code.</p></article>
+          <article class="tech-card" tabindex="0"><h5>GitHub Actions</h5><p>Tests, builds, and ships every change.</p></article>
+        </div>
+      </section>
+
+      <section class="ex-closing">
+        <h3>Now watch it for real.</h3>
+        <p>You've seen the moving parts. Ask Atlas a question and see them work.</p>
+        <a class="big-cta" href="#top" onclick="window.scrollTo({top:0,behavior:'smooth'});return false;">Back to the top ↑</a>
+      </section>
+    </div>
+
     <footer class="foot">
       <span>Atlas · agentic research on Cloudflare Workers + D1 · Claude Opus 4.8 with live web search</span>
     </footer>
 
     <script src="/app.js"></script>
+    <script src="/architecture.js"></script>
   </body>
 </html>
