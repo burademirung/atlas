@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Atlas — Deep Research Studio</title>
+    <meta
+      name="description"
+      content="Atlas runs a multi-agent research pipeline that plans, searches grounded sources, and streams a cited report — on Cloudflare Workers AI."
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,900&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <div class="grain" aria-hidden="true"></div>
+    <header class="topbar">
+      <div class="brand">
+        <span class="mark">◆</span>
+        <span class="name">ATLAS</span>
+        <span class="sub">Deep Research Studio</span>
+      </div>
+      <div class="meta">
+        <span class="pill" id="modelPill">Workers AI · Llama 3.3 70B</span>
+        <a class="pill ghost" href="https://github.com" target="_blank" rel="noreferrer">on Cloudflare</a>
+      </div>
+    </header>
+
+    <main class="layout">
+      <section class="composer">
+        <h1 class="hero">
+          Ask anything.<br /><em>Get a cited answer,</em> watched live.
+        </h1>
+        <p class="lede">
+          A multi-agent pipeline decomposes your question, retrieves grounded sources, and
+          streams a verified, cited report — running entirely on Cloudflare's edge.
+        </p>
+
+        <form id="form" class="ask">
+          <textarea
+            id="q"
+            rows="2"
+            maxlength="500"
+            placeholder="e.g. How did the printing press change information access in Europe?"
+          ></textarea>
+          <button id="run" type="submit">
+            <span class="lbl">Run research</span>
+            <span class="arrow">→</span>
+          </button>
+        </form>
+        <div class="examples" id="examples">
+          <button>What is the EU AI Act and who does it affect?</button>
+          <button>How do mRNA vaccines work?</button>
+          <button>Why did the Roman Republic fall?</button>
+        </div>
+      </section>
+
+      <section class="stage" id="stage" hidden>
+        <div class="pipeline">
+          <h3 class="panel-title">Agent pipeline</h3>
+          <ol class="stages" id="stages">
+            <li data-phase="planning"><span class="dot"></span><span class="t">Planner</span></li>
+            <li data-phase="searching"><span class="dot"></span><span class="t">Searchers</span></li>
+            <li data-phase="verifying"><span class="dot"></span><span class="t">Verify / ground</span></li>
+            <li data-phase="writing"><span class="dot"></span><span class="t">Writer</span></li>
+          </ol>
+          <div class="subqs" id="subqs"></div>
+          <h3 class="panel-title src-title">Sources <span class="count" id="srcCount">0</span></h3>
+          <div class="sources" id="sources"></div>
+        </div>
+
+        <div class="report-wrap">
+          <div class="report-head">
+            <span class="status-chip" id="statusChip">idle</span>
+            <span class="qecho" id="qecho"></span>
+          </div>
+          <article class="report" id="report">
+            <div class="placeholder">The report will stream here, token by token.</div>
+          </article>
+        </div>
+      </section>
+
+      <aside class="history">
+        <h3 class="panel-title">Recent runs</h3>
+        <div id="historyList" class="history-list"></div>
+      </aside>
+    </main>
+
+    <footer class="foot">
+      <span>Atlas · agentic research on Cloudflare Workers AI + D1 · sources via Wikipedia</span>
+    </footer>
+
+    <script src="/app.js"></script>
+  </body>
+</html>
