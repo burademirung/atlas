@@ -13,3 +13,4 @@ build/
 .DS_Store
 .remember/
 .wrangler/
+.playwright-mcp/
