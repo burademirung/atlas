@@ -79,3 +79,11 @@ services:
       TAVILY_API_KEY: ${TAVILY_API_KEY:-}
       RESEARCH_MODEL: ${RESEARCH_MODEL:-claude-opus-4-8}
     command: ["uv", "run", "arq", "atlas_api.worker.WorkerSettings"]
+
+  # React SPA (nginx) — serves the UI and proxies /v1 to the API (SSE-safe).
+  web:
+    build: ./apps/web
+    depends_on:
+      api:
+        condition: service_started
+    ports: ["8081:80"]
