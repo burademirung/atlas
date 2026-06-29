@@ -349,14 +349,35 @@
           <p class="ex-sub">Every technology the system is built on — and what each one is for.</p>
         </div>
         <div class="tech-grid">
-          <article class="tech-card" tabindex="0"><h5>Cloudflare Workers</h5><p>Runs the code at the edge, close to every user.</p></article>
-          <article class="tech-card" tabindex="0"><h5>Claude Opus 4.8</h5><p>The reasoning model that researches and writes.</p></article>
-          <article class="tech-card" tabindex="0"><h5>Cloudflare D1</h5><p>SQLite database at the edge for saved runs.</p></article>
-          <article class="tech-card" tabindex="0"><h5>Python · FastAPI</h5><p>The production backend API, async and typed.</p></article>
-          <article class="tech-card" tabindex="0"><h5>PostgreSQL</h5><p>The production database of record.</p></article>
-          <article class="tech-card" tabindex="0"><h5>Kubernetes (EKS)</h5><p>Runs API and agent workers, scales on demand.</p></article>
-          <article class="tech-card" tabindex="0"><h5>Terraform</h5><p>The whole cloud, defined as code.</p></article>
-          <article class="tech-card" tabindex="0"><h5>GitHub Actions</h5><p>Tests, builds, and ships every change.</p></article>
+          <article class="tech-card" tabindex="0"><h5>Python · FastAPI</h5><p>The backend service, built from scratch — async, layered, typed.</p></article>
+          <article class="tech-card" tabindex="0"><h5>PostgreSQL</h5><p>The production database — SQLAlchemy 2.0, Alembic, real schema.</p></article>
+          <article class="tech-card" tabindex="0"><h5>Agentic AI · LangGraph</h5><p>A multi-agent graph (plan → search → verify → write) driven by Claude.</p></article>
+          <article class="tech-card" tabindex="0"><h5>Claude Opus 4.8</h5><p>The reasoning model — deployed live with web search.</p></article>
+          <article class="tech-card" tabindex="0"><h5>Terraform</h5><p>The whole cloud as code — VPC, EKS, RDS, ECR, IAM, per-env state.</p></article>
+          <article class="tech-card" tabindex="0"><h5>Kubernetes</h5><p>A Helm chart — API + agent workers, KEDA autoscaling, hardened pods.</p></article>
+          <article class="tech-card" tabindex="0"><h5>AWS</h5><p>Owned end to end — EKS, RDS Postgres, ElastiCache, S3, ECR, Secrets.</p></article>
+          <article class="tech-card" tabindex="0"><h5>GitHub Actions</h5><p>CI/CD — lint, type-check, test, scan, build, and deploy via OIDC.</p></article>
+          <article class="tech-card" tabindex="0"><h5>Cloudflare Workers</h5><p>Runs the live edition at the edge, close to every user.</p></article>
+          <article class="tech-card" tabindex="0"><h5>Cloudflare D1</h5><p>SQLite at the edge — every live run is saved here.</p></article>
+        </div>
+      </section>
+
+      <!-- REQUIREMENTS MAP -->
+      <section class="ex-reqs">
+        <div class="ex-head center">
+          <p class="ex-eyebrow">Proof, not promises</p>
+          <h3>The seven required skills — and where each lives</h3>
+          <p class="ex-sub">Every requirement maps to real, tested code in this repository.</p>
+        </div>
+        <div class="reqs-table">
+          <div class="reqs-row reqs-head"><span>Required skill</span><span>In this repo</span><span>What it proves</span></div>
+          <div class="reqs-row"><span>Python + FastAPI</span><code>apps/api/</code><span>A backend service built from scratch — 17 passing tests.</span></div>
+          <div class="reqs-row"><span>PostgreSQL</span><code>apps/api/…/db/models.py</code><span>Production schema, migrations, tested on real Postgres.</span></div>
+          <div class="reqs-row"><span>Agentic AI (LangGraph + Claude)</span><code>apps/api/…/agents/</code><span>A multi-agent graph with parallel fan-out — tested.</span></div>
+          <div class="reqs-row"><span>Terraform</span><code>infra/terraform/</code><span>Cloud infrastructure authored as code, per environment.</span></div>
+          <div class="reqs-row"><span>Kubernetes</span><code>infra/k8s/atlas/</code><span>A Helm chart running API + agent workers in production shape.</span></div>
+          <div class="reqs-row"><span>AWS</span><code>infra/terraform/modules/</code><span>EKS, RDS, ElastiCache, S3, ECR, IAM — owned end to end.</span></div>
+          <div class="reqs-row"><span>GitHub Actions</span><code>.github/workflows/</code><span>The pipeline that tests and ships the code.</span></div>
         </div>
       </section>
 

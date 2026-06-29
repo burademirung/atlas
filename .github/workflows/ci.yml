@@ -1,0 +1,175 @@
+# Continuous Integration for Atlas (Deep-Research Studio).
+#
+# Runs the fast, untrusted-input safe checks on every pull request and on every
+# push to main: Python lint/type/test for the FastAPI service, a TypeScript
+# type-check for the Cloudflare Worker/SPA, and a supply-chain scan gate (Trivy
+# filesystem + IaC config, plus a secret scan).
+#
+# Security posture (see .github/README.md):
+#   * top-level `permissions: {}` — every job opts back in to the *minimum*.
+#   * every third-party action is pinned to a full commit SHA with a trailing
+#     `# vX.Y.Z` comment (re-pin with Dependabot / `pin-github-action`).
+#   * PR runs are cancel-in-progress; main runs are not cancelled.
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+# Least privilege by default. Jobs elevate only what they need.
+permissions: {}
+
+# One in-flight CI run per ref. Superseded PR pushes are cancelled to save
+# runner minutes; pushes to main run to completion (no cancel) for an audit
+# trail of every commit that landed.
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  api:
+    name: API (ruff / mypy / pytest)
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    defaults:
+      run:
+        working-directory: apps/api
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Set up uv (with cache)
+        uses: astral-sh/setup-uv@d4b2f3b6ecc6e67c4457f6d3e41ec42d3d0fcb86 # v5.4.2
+        with:
+          version: "0.7.13"
+          enable-cache: true
+          cache-dependency-glob: apps/api/uv.lock
+
+      - name: Install Python 3.12 + sync (frozen)
+        run: uv sync --frozen --all-groups
+
+      - name: Lint (ruff)
+        run: uv run ruff check .
+
+      - name: Format check (ruff)
+        run: uv run ruff format --check .
+
+      - name: Type check (mypy, strict)
+        run: uv run mypy src
+
+      # Docker is available on GitHub-hosted runners, so testcontainers can spin
+      # up throwaway Postgres/Redis. pytest-cov is injected ephemerally via
+      # `uv run --with` so it need not live in the project's dependency groups.
+      - name: Test (pytest + coverage)
+        run: >-
+          uv run --with pytest-cov pytest
+          --cov=atlas_api
+          --cov-report=xml:coverage.xml
+          --cov-report=term-missing
+          --junitxml=pytest-junit.xml
+
+      - name: Upload coverage report
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: api-coverage
+          path: |
+            apps/api/coverage.xml
+            apps/api/pytest-junit.xml
+          if-no-files-found: error
+          retention-days: 14
+
+      # Optional: publish to Codecov. Requires CODECOV_TOKEN repo secret.
+      # - name: Upload coverage to Codecov
+      #   uses: codecov/codecov-action@0565863a31f2c772f9f0395002a31e3f06189574 # v5.4.0
+      #   with:
+      #     files: apps/api/coverage.xml
+      #     flags: api
+      #   env:
+      #     CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+
+  web:
+    name: Web (tsc --noEmit)
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    defaults:
+      run:
+        working-directory: apps/cloudflare
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Set up Node 20 (with npm cache)
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd1f6b6aa4a55 # v4.1.0
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: apps/cloudflare/package-lock.json
+
+      - name: Install (npm ci)
+        run: npm ci
+
+      - name: Type check (tsc --noEmit)
+        run: npx tsc --noEmit
+
+  security:
+    name: Security (Trivy fs + config, secrets)
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      # Required to publish SARIF to the GitHub code-scanning dashboard.
+      security-events: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      # ---- Gate 1: dependency / filesystem vulnerabilities -----------------
+      # Fails the build on any fixable CRITICAL/HIGH finding in lockfiles
+      # (uv.lock, package-lock.json) or other detected manifests.
+      - name: Trivy filesystem scan (gate)
+        uses: aquasecurity/trivy-action@6c175e9c4083a92bbca2f9724c8a5e33bc2d97a5 # v0.28.0
+        with:
+          scan-type: fs
+          scanners: vuln,secret
+          severity: CRITICAL,HIGH
+          ignore-unfixed: true
+          exit-code: "1"
+          format: table
+
+      # ---- Gate 2: IaC / config misconfiguration --------------------------
+      # Scans Dockerfiles, Helm, Terraform, Kubernetes manifests.
+      - name: Trivy config (IaC) scan (gate)
+        uses: aquasecurity/trivy-action@6c175e9c4083a92bbca2f9724c8a5e33bc2d97a5 # v0.28.0
+        with:
+          scan-type: config
+          severity: CRITICAL,HIGH
+          exit-code: "1"
+          format: table
+
+      # ---- Visibility: upload SARIF (non-blocking) ------------------------
+      - name: Trivy filesystem scan (SARIF)
+        if: ${{ !cancelled() }}
+        uses: aquasecurity/trivy-action@6c175e9c4083a92bbca2f9724c8a5e33bc2d97a5 # v0.28.0
+        with:
+          scan-type: fs
+          scanners: vuln,secret,misconfig
+          format: sarif
+          output: trivy-results.sarif
+          # Report-only here; gating is done by the steps above.
+          exit-code: "0"
+
+      - name: Upload Trivy SARIF
+        if: ${{ !cancelled() }}
+        uses: github/codeql-action/upload-sarif@b6a472f63d85b9c78a3ac5e89422239fc15e9b3c # v3.28.1
+        with:
+          sarif_file: trivy-results.sarif
+          category: trivy-fs
+
+      # ---- Secret scan (history-aware on PRs) -----------------------------
+      - name: Secret scan (gitleaks)
+        uses: gitleaks/gitleaks-action@83373cf2f8c4db6e24b41c1a9b086bb9619e9cd3 # v2.3.7
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

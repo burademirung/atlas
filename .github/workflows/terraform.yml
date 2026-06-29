@@ -1,0 +1,149 @@
+# Terraform CI/CD for Atlas infrastructure.
+#
+# On a PR that touches infra/terraform: fmt -check, init (-backend=false so no
+# cloud creds are needed for validation), validate, plus a Trivy IaC config
+# scan and an optional Checkov policy gate. No AWS access on PRs from forks.
+#
+# On push to main: a gated `terraform plan` per environment. Plan uses GitHub
+# OIDC to assume a *read-only* AWS role and runs inside the `infra-plan`
+# Environment (required reviewers). `terraform apply` is intentionally NOT
+# automated — apply is a deliberate, human-run step (see .github/README.md).
+#
+# Matrix runs over envs/dev and envs/prod (separate root config + state per env).
+name: Terraform
+
+on:
+  pull_request:
+    paths:
+      - infra/terraform/**
+      - .github/workflows/terraform.yml
+  push:
+    branches: [main]
+    paths:
+      - infra/terraform/**
+      - .github/workflows/terraform.yml
+
+permissions: {}
+
+concurrency:
+  # Serialize per ref+env so two plans never touch the same state lock.
+  group: terraform-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  # ---------------------------------------------------------------------------
+  # PR validation + IaC security scan. No cloud credentials.
+  # ---------------------------------------------------------------------------
+  validate:
+    name: validate (${{ matrix.env }})
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      security-events: write # upload Trivy SARIF
+    strategy:
+      fail-fast: false
+      matrix:
+        env: [dev, prod]
+    defaults:
+      run:
+        working-directory: infra/terraform/envs/${{ matrix.env }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@b9cd54a3c349d3f38e8881555d616ced269862dd # v3.1.2
+        with:
+          terraform_version: "1.10.5"
+          terraform_wrapper: false
+
+      - name: Format check (whole tree)
+        working-directory: infra/terraform
+        run: terraform fmt -check -recursive
+
+      - name: Init (no backend)
+        run: terraform init -backend=false -input=false
+
+      - name: Validate
+        run: terraform validate
+
+      # IaC misconfiguration scan (Trivy's config scanner; supersedes tfsec,
+      # which Aqua merged into Trivy). Gates on CRITICAL/HIGH.
+      - name: Trivy config scan (gate)
+        uses: aquasecurity/trivy-action@6c175e9c4083a92bbca2f9724c8a5e33bc2d97a5 # v0.28.0
+        with:
+          scan-type: config
+          scan-ref: infra/terraform/envs/${{ matrix.env }}
+          severity: CRITICAL,HIGH
+          exit-code: "1"
+          format: table
+
+      # Optional policy gate. Checkov ships hundreds of AWS policies; pair with
+      # custom OPA/Conftest policies under infra/terraform/policy/ if desired.
+      - name: Checkov policy scan
+        uses: bridgecrewio/checkov-action@99bb2caf247dfd9f03cf984373bc6043d4e32ebf # v12.2641.0
+        with:
+          directory: infra/terraform/envs/${{ matrix.env }}
+          framework: terraform
+          quiet: true
+          output_format: cli,sarif
+          output_file_path: console,checkov.sarif
+          soft_fail: false
+
+      - name: Upload Checkov SARIF
+        if: ${{ !cancelled() }}
+        uses: github/codeql-action/upload-sarif@b6a472f63d85b9c78a3ac5e89422239fc15e9b3c # v3.28.1
+        with:
+          sarif_file: infra/terraform/envs/${{ matrix.env }}/checkov.sarif
+          category: checkov-${{ matrix.env }}
+
+  # ---------------------------------------------------------------------------
+  # Gated plan on main. OIDC -> read-only AWS role. Apply is run by a human.
+  # ---------------------------------------------------------------------------
+  plan:
+    name: plan (${{ matrix.env }})
+    if: github.event_name == 'push'
+    runs-on: ubuntu-24.04
+    environment:
+      name: infra-plan
+    permissions:
+      contents: read
+      id-token: write # OIDC -> AWS
+    strategy:
+      fail-fast: false
+      matrix:
+        env: [dev, prod]
+    defaults:
+      run:
+        working-directory: infra/terraform/envs/${{ matrix.env }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Configure AWS credentials (OIDC, read-only)
+        uses: aws-actions/configure-aws-credentials@e3dd6a429d7300a6a4c196c26e071d42e0343502 # v4.0.2
+        with:
+          role-to-assume: ${{ vars.AWS_TF_PLAN_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
+          role-session-name: gha-atlas-tfplan-${{ matrix.env }}-${{ github.run_id }}
+
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@b9cd54a3c349d3f38e8881555d616ced269862dd # v3.1.2
+        with:
+          terraform_version: "1.10.5"
+          terraform_wrapper: false
+
+      - name: Init (S3 backend, native locking)
+        run: terraform init -input=false
+
+      - name: Plan
+        run: terraform plan -input=false -lock-timeout=5m -out=tfplan
+
+      - name: Upload plan artifact
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: tfplan-${{ matrix.env }}
+          path: infra/terraform/envs/${{ matrix.env }}/tfplan
+          retention-days: 7
+          if-no-files-found: error

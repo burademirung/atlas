@@ -466,6 +466,60 @@
 .tech-card h5 { font-weight: 600; font-size: 15.5px; margin-bottom: 6px; }
 .tech-card p { color: var(--faint); font-size: 13px; line-height: 1.5; margin: 0; }
 
+/* ───────────────────────────── requirements map ───────────────────────────── */
+.ex-reqs { padding: 14px 0 56px; }
+.ex-reqs .ex-head { margin-bottom: 26px; }
+.reqs-table {
+  max-width: 1040px;
+  margin: 0 auto;
+  padding: 0 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.reqs-row {
+  display: grid;
+  grid-template-columns: 1.1fr 1.1fr 1.5fr;
+  gap: 14px;
+  align-items: center;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 13px 18px;
+  font-size: 14px;
+  box-shadow: 0 1px 2px rgba(29, 26, 20, 0.04);
+}
+.reqs-row > span:first-child { font-weight: 600; color: var(--ink); }
+.reqs-row > span:last-child { color: var(--dim); font-size: 13px; }
+.reqs-row code {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 12px;
+  color: var(--gold);
+  background: var(--paper2);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 3px 7px;
+  justify-self: start;
+}
+.reqs-row.reqs-head {
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  padding-bottom: 2px;
+}
+.reqs-row.reqs-head span {
+  font-family: "JetBrains Mono", monospace !important;
+  font-weight: 500 !important;
+  font-size: 11px !important;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--faint) !important;
+}
+@media (max-width: 760px) {
+  .reqs-row { grid-template-columns: 1fr; gap: 5px; }
+  .reqs-row.reqs-head { display: none; }
+}
+
 /* ───────────────────────────── closing ───────────────────────────── */
 .ex-closing { text-align: center; padding: 60px 32px 30px; }
 .ex-closing h3 { font-weight: 600; font-size: clamp(26px, 3.4vw, 38px); margin-bottom: 10px; }

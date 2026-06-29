@@ -1,0 +1,27 @@
+# Copy to terraform.tfvars and fill in. Do NOT commit terraform.tfvars.
+# The Cloudflare token is read from the environment, not this file:
+#   export TF_VAR_cloudflare_api_token=...
+
+project            = "atlas"
+environment        = "prod"
+region             = "us-east-1"
+vpc_cidr           = "10.20.0.0/16"
+kubernetes_version = "1.31"
+
+# Restrict the EKS public API endpoint to known admin egress in prod.
+eks_public_access_cidrs = ["203.0.113.0/24"]
+
+# ---- Cloudflare ----
+cloudflare_account_id = "0123456789abcdef0123456789abcdef"
+cloudflare_zone_id    = "fedcba9876543210fedcba9876543210"
+app_hostname          = "atlas.example.com"
+origin_api_url        = "https://api.atlas.internal.example.com"
+
+# ---- Application secrets (created out-of-band; pass their ARNs) ----
+# additional_secret_arns = [
+#   "arn:aws:secretsmanager:us-east-1:111122223333:secret:atlas-prod/app/jwt-XXXX",
+#   "arn:aws:secretsmanager:us-east-1:111122223333:secret:atlas-prod/providers/tavily-XXXX",
+# ]
+# additional_secret_kms_key_arns = [
+#   "arn:aws:kms:us-east-1:111122223333:key/abcd1234-...",
+# ]
