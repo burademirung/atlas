@@ -22,6 +22,13 @@ class Settings(BaseSettings):
 
     environment: str = "dev"
 
+    # Agentic AI (LangGraph + Claude) ---------------------------------------
+    anthropic_api_key: str | None = None
+    tavily_api_key: str | None = None
+    research_model: str = "claude-opus-4-8"
+    max_subquestions: int = 4
+    max_sources_per_q: int = 3
+
 
 @lru_cache
 def get_settings() -> Settings:
