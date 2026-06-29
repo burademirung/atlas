@@ -1,0 +1,58 @@
+apiVersion: v2
+name: atlas
+description: >-
+  Deep-Research Studio (Atlas) — a multi-tenant agentic research platform.
+  This chart deploys the FastAPI API (CPU HPA + ALB ingress) and the arq agent
+  worker (KEDA queue-depth autoscaling, scale-to-zero), plus the supporting
+  Kubernetes objects: ServiceAccounts (EKS Pod Identity), ConfigMap, an
+  External Secrets Operator ExternalSecret, an Alembic migration pre-upgrade
+  hook, default-deny NetworkPolicies, and PodDisruptionBudgets.
+type: application
+
+# Chart version — bump on any template/values change (SemVer).
+version: 0.1.0
+
+# Default application image tag. Individual images can override via
+# .Values.<component>.image.tag; otherwise they fall back to this.
+appVersion: "0.1.0"
+
+kubeVersion: ">=1.28.0-0"
+
+home: https://github.com/degenito/atlas
+sources:
+  - https://github.com/degenito/atlas
+maintainers:
+  - name: Atlas Platform
+    email: vlad@degenito.ai
+
+keywords:
+  - atlas
+  - fastapi
+  - langgraph
+  - agentic-ai
+  - keda
+  - research
+
+# ---------------------------------------------------------------------------
+# Cluster add-on prerequisites (NOT packaged as subchart dependencies).
+#
+# These are CLUSTER-SCOPED add-ons that own CRDs and controllers. They must be
+# installed and reconciled independently of this application release (typically
+# via their own Helm charts in a platform/bootstrap layer), so they are
+# intentionally NOT declared under `dependencies:` here:
+#
+#   * KEDA (kedacore/keda)                  -> provides keda.sh/v1alpha1 ScaledObject
+#                                              used by templates/worker-scaledobject.yaml
+#                                              Install: helm repo add kedacore https://kedacore.github.io/charts
+#                                                       helm install keda kedacore/keda -n keda --create-namespace
+#
+#   * External Secrets Operator             -> provides external-secrets.io ExternalSecret
+#     (external-secrets/external-secrets)      used by templates/externalsecret.yaml
+#
+#   * AWS Load Balancer Controller          -> reconciles the `alb` IngressClass
+#     (aws/eks-charts)                          used by templates/ingress.yaml
+#
+# Each template that depends on a CRD is guarded by a `*.enabled` value so the
+# chart still renders on clusters where a given add-on is absent.
+# ---------------------------------------------------------------------------
+# dependencies: []

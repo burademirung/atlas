@@ -1,0 +1,20 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "atlas.api.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "atlas.api.labels" . | nindent 4 }}
+  {{- with .Values.api.service.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  type: {{ .Values.api.service.type }}
+  ports:
+    - name: http
+      port: {{ .Values.api.service.port }}
+      targetPort: http
+      protocol: TCP
+  selector:
+    {{- include "atlas.api.selectorLabels" . | nindent 4 }}

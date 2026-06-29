@@ -1,0 +1,125 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "atlas.api.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "atlas.api.labels" . | nindent 4 }}
+spec:
+  {{- if not .Values.api.hpa.enabled }}
+  replicas: {{ .Values.api.replicaCount }}
+  {{- end }}
+  revisionHistoryLimit: 5
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      # Keep in-flight SSE streams alive across rollouts (§13).
+      maxUnavailable: 0
+      maxSurge: 1
+  selector:
+    matchLabels:
+      {{- include "atlas.api.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "atlas.api.labels" . | nindent 8 }}
+      annotations:
+        # Roll pods when config/secret content changes.
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+        {{- if .Values.metrics.enabled }}
+        prometheus.io/scrape: "true"
+        prometheus.io/path: {{ .Values.metrics.path | quote }}
+        prometheus.io/port: {{ .Values.metrics.port | quote }}
+        {{- end }}
+        {{- with .Values.api.podAnnotations }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+    spec:
+      serviceAccountName: {{ .Values.serviceAccount.api.name }}
+      {{- include "atlas.imagePullSecrets" . | nindent 6 }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      terminationGracePeriodSeconds: {{ .Values.api.terminationGracePeriodSeconds }}
+      containers:
+        - name: api
+          image: {{ include "atlas.image" (dict "root" $ "repo" .Values.api.image.repository "tag" .Values.api.image.tag) }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          {{- with .Values.api.command }}
+          command:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.api.args }}
+          args:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.api.containerPort }}
+              protocol: TCP
+          envFrom:
+            - configMapRef:
+                name: {{ include "atlas.configMapName" . }}
+            - secretRef:
+                name: {{ include "atlas.secretName" . }}
+          startupProbe:
+            httpGet:
+              path: {{ .Values.api.probes.startup.path }}
+              port: http
+            initialDelaySeconds: {{ .Values.api.probes.startup.initialDelaySeconds }}
+            periodSeconds: {{ .Values.api.probes.startup.periodSeconds }}
+            timeoutSeconds: {{ .Values.api.probes.startup.timeoutSeconds }}
+            failureThreshold: {{ .Values.api.probes.startup.failureThreshold }}
+          livenessProbe:
+            httpGet:
+              path: {{ .Values.api.probes.liveness.path }}
+              port: http
+            initialDelaySeconds: {{ .Values.api.probes.liveness.initialDelaySeconds }}
+            periodSeconds: {{ .Values.api.probes.liveness.periodSeconds }}
+            timeoutSeconds: {{ .Values.api.probes.liveness.timeoutSeconds }}
+            failureThreshold: {{ .Values.api.probes.liveness.failureThreshold }}
+          readinessProbe:
+            httpGet:
+              path: {{ .Values.api.probes.readiness.path }}
+              port: http
+            initialDelaySeconds: {{ .Values.api.probes.readiness.initialDelaySeconds }}
+            periodSeconds: {{ .Values.api.probes.readiness.periodSeconds }}
+            timeoutSeconds: {{ .Values.api.probes.readiness.timeoutSeconds }}
+            failureThreshold: {{ .Values.api.probes.readiness.failureThreshold }}
+          {{- with .Values.api.lifecycle.preStop.command }}
+          lifecycle:
+            preStop:
+              exec:
+                command:
+                  {{- toYaml . | nindent 18 }}
+          {{- end }}
+          resources:
+            {{- toYaml .Values.api.resources | nindent 12 }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          {{- if .Values.emptyDirTmp.enabled }}
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+          {{- end }}
+      {{- if .Values.emptyDirTmp.enabled }}
+      volumes:
+        - name: tmp
+          emptyDir:
+            sizeLimit: {{ .Values.emptyDirTmp.sizeLimit }}
+      {{- end }}
+      {{- with .Values.api.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.api.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.api.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.api.topologySpreadConstraints }}
+      topologySpreadConstraints:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

@@ -1,0 +1,443 @@
+# ===========================================================================
+# Atlas — default values
+#
+# Override per-environment with a values file (e.g. values-dev.yaml,
+# values-prod.yaml) and `helm upgrade --install -f`. Nothing here is hardcoded
+# in templates; every field below is referenced via .Values.
+# ===========================================================================
+
+# Optional overrides for the chart name used to build resource names/labels.
+nameOverride: ""
+fullnameOverride: ""
+
+# ---------------------------------------------------------------------------
+# Container images
+#
+# `registry` is the shared ECR registry host; per-component repository + tag
+# are appended. Leave a tag empty to fall back to Chart.AppVersion. Deploy by
+# immutable digest in CD by setting tag to a `sha256:...` digest (the template
+# joins with `:` for tags and `@` is supported by passing a digest in `tag`
+# prefixed with `@sha256:` — see _helpers.tpl).
+# ---------------------------------------------------------------------------
+image:
+  # e.g. 123456789012.dkr.ecr.eu-west-1.amazonaws.com
+  registry: "123456789012.dkr.ecr.eu-west-1.amazonaws.com"
+  pullPolicy: IfNotPresent
+  # Names of imagePullSecrets if the registry is private and not using IAM.
+  # With ECR + Pod Identity / node IAM this is typically empty.
+  pullSecrets: []
+  # - name: ecr-pull-secret
+
+# ---------------------------------------------------------------------------
+# Service accounts (EKS Pod Identity)
+#
+# With EKS Pod Identity the association between the SA and the IAM role is made
+# OUT OF BAND (eks create-pod-identity-association / Terraform), so no IRSA
+# `eks.amazonaws.com/role-arn` annotation is required. The optional
+# annotations map below is provided for the IRSA fallback documented in §10.
+# ---------------------------------------------------------------------------
+serviceAccount:
+  api:
+    create: true
+    name: atlas-api
+    # IRSA fallback only (Pod Identity needs no annotation):
+    annotations: {}
+    #   eks.amazonaws.com/role-arn: arn:aws:iam::123456789012:role/atlas-api
+  worker:
+    create: true
+    name: atlas-worker
+    annotations: {}
+    #   eks.amazonaws.com/role-arn: arn:aws:iam::123456789012:role/atlas-worker
+  migration:
+    create: true
+    name: atlas-migration
+    annotations: {}
+
+# ---------------------------------------------------------------------------
+# Non-secret application configuration (rendered into a ConfigMap, loaded via
+# envFrom). Secrets live in the ExternalSecret-managed Secret instead.
+#
+# DATABASE_URL itself carries the DB password and is therefore assembled inside
+# the ExternalSecret target template from the parts below + the Secrets Manager
+# password. The app reads a single DATABASE_URL env var.
+# ---------------------------------------------------------------------------
+config:
+  environment: production
+  logLevel: INFO
+
+  # Postgres reached THROUGH PgBouncer (transaction pooling) — never RDS direct.
+  db:
+    host: atlas-pgbouncer.atlas.svc.cluster.local
+    port: 6432
+    name: atlas
+    user: atlas
+    # SQLAlchemy async driver scheme.
+    driver: postgresql+asyncpg
+
+  # Redis / ElastiCache (arq queue + per-run Redis Streams + JWT jti deny-list).
+  redis:
+    # Full URL placed in the ConfigMap. Use rediss:// for in-transit TLS.
+    # If ElastiCache AUTH is enabled, the auth token is injected via the
+    # ExternalSecret (REDIS_PASSWORD) and the app composes it; the plain URL
+    # here is the non-secret base.
+    url: rediss://atlas-redis.atlas.svc.cluster.local:6379/0
+
+  # JWT validation knobs (RFC 8725) — non-secret. The signing secret is in the
+  # ExternalSecret-managed Secret (JWT_SECRET).
+  jwt:
+    issuer: atlas
+    audience: atlas-api
+    algorithm: HS256
+    accessTtlSeconds: 600
+    refreshTtlSeconds: 1209600
+
+  # Agent model + cost/abuse caps (§5/§11 guardrails). Names match
+  # pydantic-settings fields (uppercased env vars).
+  research:
+    model: claude-opus-4-8
+    maxSubquestions: 4
+    maxSourcesPerQ: 3
+    maxCriticLoops: 1
+    perRunTokenBudget: 200000
+    perUserDailyRunQuota: 25
+
+  # Extra free-form non-secret env (merged verbatim into the ConfigMap).
+  extraEnv: {}
+  #   OTEL_EXPORTER_OTLP_ENDPOINT: http://adot-collector.observability:4317
+
+# ---------------------------------------------------------------------------
+# External Secrets Operator — pulls secrets from AWS Secrets Manager into a
+# single k8s Secret consumed by api + worker (envFrom).
+# ---------------------------------------------------------------------------
+externalSecrets:
+  enabled: true
+  # CRD apiVersion — `external-secrets.io/v1` (GA) on ESO >= 0.10; older
+  # clusters may need `external-secrets.io/v1beta1`.
+  apiVersion: external-secrets.io/v1
+  refreshInterval: 1h
+  secretStoreRef:
+    name: aws-secretsmanager
+    kind: ClusterSecretStore
+  # Name of the k8s Secret this ExternalSecret creates/owns.
+  targetSecretName: atlas-secrets
+  # AWS Secrets Manager keys. `key` is the secret id/path; `property` selects a
+  # JSON field within it (omit for a plain-string secret).
+  remoteRefs:
+    jwtSecret:
+      key: atlas/prod/app
+      property: jwt_secret
+    anthropicApiKey:
+      key: atlas/prod/providers
+      property: anthropic_api_key
+    tavilyApiKey:
+      key: atlas/prod/providers
+      property: tavily_api_key
+    dbPassword:
+      key: atlas/prod/db
+      property: password
+    # Optional ElastiCache AUTH token; leave key empty to skip.
+    redisPassword:
+      key: ""
+      property: ""
+
+# ---------------------------------------------------------------------------
+# API (FastAPI / uvicorn) Deployment
+# ---------------------------------------------------------------------------
+api:
+  image:
+    repository: atlas/api
+    tag: "" # defaults to .Chart.AppVersion
+  replicaCount: 3
+  # uvicorn listen port (matches the app Dockerfile EXPOSE 8080).
+  containerPort: 8080
+  command: []
+  args: []
+  resources:
+    requests:
+      cpu: 250m
+      memory: 512Mi
+    limits:
+      cpu: "1"
+      memory: 1Gi
+  # Graceful SSE drain on rollout (deregister from ALB before exit).
+  terminationGracePeriodSeconds: 45
+  lifecycle:
+    preStop:
+      # distroless has no /bin/sh; use the bundled interpreter to sleep.
+      command: ["python", "-c", "import time; time.sleep(15)"]
+  probes:
+    startup:
+      path: /healthz
+      initialDelaySeconds: 0
+      periodSeconds: 5
+      timeoutSeconds: 3
+      failureThreshold: 30 # up to ~150s to come up before liveness engages
+    liveness:
+      path: /healthz
+      initialDelaySeconds: 0
+      periodSeconds: 10
+      timeoutSeconds: 3
+      failureThreshold: 3
+    readiness:
+      path: /readyz
+      initialDelaySeconds: 0
+      periodSeconds: 5
+      timeoutSeconds: 3
+      failureThreshold: 3
+  service:
+    type: ClusterIP
+    port: 80
+    annotations: {}
+  podAnnotations: {}
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+  topologySpreadConstraints: []
+
+  # CPU-based HPA for the stateless API tier (§10).
+  hpa:
+    enabled: true
+    minReplicas: 3
+    maxReplicas: 20
+    targetCPUUtilizationPercentage: 70
+    # Optional memory target (omit to disable).
+    targetMemoryUtilizationPercentage: 0
+    behavior:
+      scaleDown:
+        stabilizationWindowSeconds: 300
+        policies:
+          - type: Percent
+            value: 50
+            periodSeconds: 60
+      scaleUp:
+        stabilizationWindowSeconds: 0
+        policies:
+          - type: Percent
+            value: 100
+            periodSeconds: 30
+
+  pdb:
+    enabled: true
+    # maxUnavailable: 0 keeps in-flight SSE streams alive across voluntary
+    # disruptions (§13). Set either maxUnavailable OR minAvailable, not both.
+    maxUnavailable: 0
+    minAvailable: null
+
+# ---------------------------------------------------------------------------
+# Worker (arq agent worker) Deployment — no Service; scaled by KEDA.
+# ---------------------------------------------------------------------------
+worker:
+  image:
+    repository: atlas/worker
+    tag: ""
+  # Baseline replicas when KEDA is disabled (KEDA owns scaling when enabled).
+  replicaCount: 1
+  command: ["arq", "atlas_api.worker.WorkerSettings"]
+  args: []
+  resources:
+    requests:
+      cpu: 500m
+      memory: 1Gi
+    limits:
+      cpu: "2"
+      memory: 2Gi
+  # Long grace period: a run takes minutes; the worker traps SIGTERM, finishes
+  # the current node boundary, checkpoints a partial report, then exits (§6).
+  terminationGracePeriodSeconds: 120
+  lifecycle:
+    preStop:
+      # Stop pulling new jobs and let in-flight work drain before SIGTERM.
+      command: ["python", "-c", "import time; time.sleep(20)"]
+  probes:
+    liveness:
+      # `arq ... --check` exits 0 when the worker heartbeat key is fresh.
+      exec:
+        command: ["arq", "atlas_api.worker.WorkerSettings", "--check"]
+      initialDelaySeconds: 20
+      periodSeconds: 30
+      timeoutSeconds: 10
+      failureThreshold: 3
+    startup:
+      exec:
+        command: ["arq", "atlas_api.worker.WorkerSettings", "--check"]
+      periodSeconds: 10
+      timeoutSeconds: 10
+      failureThreshold: 30
+  podAnnotations: {}
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+  topologySpreadConstraints: []
+
+  pdb:
+    enabled: true
+    maxUnavailable: 1
+    minAvailable: null
+
+# ---------------------------------------------------------------------------
+# KEDA — queue-depth autoscaling for the worker (Redis scaler, scale-to-zero).
+# Plain HPA cannot read queue depth (§2/§10); this is the correctness fix.
+# ---------------------------------------------------------------------------
+keda:
+  enabled: true
+  pollingInterval: 15 # seconds between queue-depth checks
+  cooldownPeriod: 300 # seconds before scaling back to minReplicaCount
+  minReplicaCount: 0 # scale-to-zero when the queue is empty
+  maxReplicaCount: 20
+  # Optional: KEDA pins replicas to this when scaled to zero but not idle.
+  idleReplicaCount: null
+  fallback:
+    failureThreshold: 3
+    replicas: 1
+  redis:
+    # KEDA connects to Redis directly (independent of the app REDIS_URL).
+    address: atlas-redis.atlas.svc.cluster.local:6379
+    databaseIndex: "0"
+    enableTLS: "true"
+    # arq stores queued jobs under this Redis key.
+    listName: "arq:queue"
+    # lagThreshold: desired jobs-per-replica; KEDA targets queue_depth/this.
+    lagThreshold: "5"
+    # Queue depth above which KEDA activates from zero (>0 => wake up).
+    activationLagThreshold: "0"
+    # If ElastiCache AUTH is enabled, reference a TriggerAuthentication that
+    # maps REDIS_PASSWORD from the app Secret.
+    authenticationRef:
+      enabled: false
+      name: atlas-redis-keda-auth
+  advanced:
+    restoreToOriginalReplicaCount: true
+    horizontalPodAutoscalerConfig:
+      behavior:
+        scaleDown:
+          stabilizationWindowSeconds: 300
+          policies:
+            - type: Percent
+              value: 50
+              periodSeconds: 60
+
+# ---------------------------------------------------------------------------
+# Ingress (AWS Load Balancer Controller — ALB)
+# ---------------------------------------------------------------------------
+ingress:
+  enabled: true
+  className: alb
+  host: atlas.example.com
+  path: /
+  pathType: Prefix
+  # ACM certificate for TLS termination at the ALB.
+  certificateArn: "arn:aws:acm:eu-west-1:123456789012:certificate/REPLACE-ME"
+  annotations:
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    alb.ingress.kubernetes.io/target-type: ip
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTPS":443}]'
+    alb.ingress.kubernetes.io/ssl-redirect: "443"
+    alb.ingress.kubernetes.io/backend-protocol: HTTP
+    alb.ingress.kubernetes.io/healthcheck-protocol: HTTP
+    alb.ingress.kubernetes.io/healthcheck-path: /healthz
+    alb.ingress.kubernetes.io/healthcheck-interval-seconds: "15"
+    alb.ingress.kubernetes.io/success-codes: "200"
+    alb.ingress.kubernetes.io/group.name: atlas
+    # SSE: do not buffer; give long idle timeout for streaming responses.
+    alb.ingress.kubernetes.io/load-balancer-attributes: idle_timeout.timeout_seconds=300
+    alb.ingress.kubernetes.io/target-group-attributes: deregistration_delay.timeout_seconds=30
+
+# ---------------------------------------------------------------------------
+# Alembic migration hook (helm pre-install/pre-upgrade)
+# ---------------------------------------------------------------------------
+migration:
+  enabled: true
+  # Reuses the API image (ships alembic + the app's migration scripts).
+  image:
+    repository: atlas/api
+    tag: ""
+  command: ["alembic", "upgrade", "head"]
+  backoffLimit: 1
+  activeDeadlineSeconds: 600
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+
+# ---------------------------------------------------------------------------
+# NetworkPolicies — default-deny ingress+egress + explicit allows (§11.2)
+# ---------------------------------------------------------------------------
+networkPolicy:
+  enabled: true
+  # Ingress to the API http port. With ALB IP-target mode, traffic arrives from
+  # the ALB ENIs in the VPC, so allow the VPC/cluster CIDR (tighten as needed).
+  apiIngress:
+    fromCidrs:
+      - 10.0.0.0/8
+  # EKS Pod Identity Agent serves credentials on this link-local endpoint; the
+  # default-deny egress would otherwise break workload identity.
+  awsPodIdentity:
+    cidr: 169.254.170.23/32
+    port: 80
+  # kube-dns / CoreDNS selector + namespace for the DNS egress allow.
+  dns:
+    namespaceLabel: kubernetes.io/metadata.name
+    namespaceValue: kube-system
+    podLabelKey: k8s-app
+    podLabelValue: kube-dns
+  # CIDRs reachable by the worker for HTTPS egress (provider APIs). Keep tight;
+  # ideally point at an egress proxy. Link-local/IMDS/RFC1918 are excluded.
+  egress:
+    httpsCidrs:
+      - 0.0.0.0/0
+    # Blocked destinations (carved out of the allows above) — IMDS + private.
+    blockedCidrs:
+      - 169.254.169.254/32
+      - 169.254.0.0/16
+      - 10.0.0.0/8
+      - 172.16.0.0/12
+      - 192.168.0.0/16
+  # In-cluster dependency selectors for the explicit allows.
+  redis:
+    podLabelKey: app.kubernetes.io/name
+    podLabelValue: redis
+    port: 6379
+  pgbouncer:
+    podLabelKey: app.kubernetes.io/name
+    podLabelValue: pgbouncer
+    port: 6432
+
+# ---------------------------------------------------------------------------
+# Pod / container hardening — Restricted Pod Security Standard (§10/§11.4)
+# Applied to api, worker and the migration hook.
+# ---------------------------------------------------------------------------
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 65532 # nonroot user in distroless
+  runAsGroup: 65532
+  fsGroup: 65532
+  seccompProfile:
+    type: RuntimeDefault
+
+securityContext:
+  runAsNonRoot: true
+  runAsUser: 65532
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: true
+  privileged: false
+  capabilities:
+    drop:
+      - ALL
+  seccompProfile:
+    type: RuntimeDefault
+
+# Writable scratch for read-only-root containers (uvicorn/arq temp files).
+emptyDirTmp:
+  enabled: true
+  sizeLimit: 256Mi
+
+# ---------------------------------------------------------------------------
+# Prometheus scrape (RED metrics on /metrics) — annotation-based discovery.
+# ---------------------------------------------------------------------------
+metrics:
+  enabled: true
+  path: /metrics
+  port: 8080

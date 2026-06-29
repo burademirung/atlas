@@ -1,0 +1,112 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "atlas.worker.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "atlas.worker.labels" . | nindent 4 }}
+spec:
+  {{- if not .Values.keda.enabled }}
+  # When KEDA is disabled it owns no scaling; fall back to a static count.
+  replicas: {{ .Values.worker.replicaCount }}
+  {{- end }}
+  revisionHistoryLimit: 5
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
+      maxSurge: 1
+  selector:
+    matchLabels:
+      {{- include "atlas.worker.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "atlas.worker.labels" . | nindent 8 }}
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+        {{- if .Values.metrics.enabled }}
+        prometheus.io/scrape: "true"
+        prometheus.io/path: {{ .Values.metrics.path | quote }}
+        prometheus.io/port: {{ .Values.metrics.port | quote }}
+        {{- end }}
+        {{- with .Values.worker.podAnnotations }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+    spec:
+      serviceAccountName: {{ .Values.serviceAccount.worker.name }}
+      {{- include "atlas.imagePullSecrets" . | nindent 6 }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      # Long grace: drain the in-flight run, checkpoint a partial report, exit.
+      terminationGracePeriodSeconds: {{ .Values.worker.terminationGracePeriodSeconds }}
+      containers:
+        - name: worker
+          image: {{ include "atlas.image" (dict "root" $ "repo" .Values.worker.image.repository "tag" .Values.worker.image.tag) }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          {{- with .Values.worker.command }}
+          command:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.worker.args }}
+          args:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          envFrom:
+            - configMapRef:
+                name: {{ include "atlas.configMapName" . }}
+            - secretRef:
+                name: {{ include "atlas.secretName" . }}
+          startupProbe:
+            exec:
+              command:
+                {{- toYaml .Values.worker.probes.startup.exec.command | nindent 16 }}
+            periodSeconds: {{ .Values.worker.probes.startup.periodSeconds }}
+            timeoutSeconds: {{ .Values.worker.probes.startup.timeoutSeconds }}
+            failureThreshold: {{ .Values.worker.probes.startup.failureThreshold }}
+          livenessProbe:
+            exec:
+              command:
+                {{- toYaml .Values.worker.probes.liveness.exec.command | nindent 16 }}
+            initialDelaySeconds: {{ .Values.worker.probes.liveness.initialDelaySeconds }}
+            periodSeconds: {{ .Values.worker.probes.liveness.periodSeconds }}
+            timeoutSeconds: {{ .Values.worker.probes.liveness.timeoutSeconds }}
+            failureThreshold: {{ .Values.worker.probes.liveness.failureThreshold }}
+          {{- with .Values.worker.lifecycle.preStop.command }}
+          lifecycle:
+            preStop:
+              exec:
+                command:
+                  {{- toYaml . | nindent 18 }}
+          {{- end }}
+          resources:
+            {{- toYaml .Values.worker.resources | nindent 12 }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          {{- if .Values.emptyDirTmp.enabled }}
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+          {{- end }}
+      {{- if .Values.emptyDirTmp.enabled }}
+      volumes:
+        - name: tmp
+          emptyDir:
+            sizeLimit: {{ .Values.emptyDirTmp.sizeLimit }}
+      {{- end }}
+      {{- with .Values.worker.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.worker.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.worker.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.worker.topologySpreadConstraints }}
+      topologySpreadConstraints:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

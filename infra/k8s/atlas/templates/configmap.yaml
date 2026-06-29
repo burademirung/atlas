@@ -1,0 +1,44 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "atlas.configMapName" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "atlas.labels" . | nindent 4 }}
+data:
+  # ---- Runtime / logging -------------------------------------------------
+  ENVIRONMENT: {{ .Values.config.environment | quote }}
+  LOG_LEVEL: {{ .Values.config.logLevel | quote }}
+
+  # ---- Datastore connection parts (non-secret) ---------------------------
+  # The full DATABASE_URL (with password) is assembled in the ExternalSecret
+  # target template; these parts are exported for diagnostics/tooling.
+  DB_HOST: {{ .Values.config.db.host | quote }}
+  DB_PORT: {{ .Values.config.db.port | quote }}
+  DB_NAME: {{ .Values.config.db.name | quote }}
+  DB_USER: {{ .Values.config.db.user | quote }}
+
+  # Redis (arq queue + per-run Streams + jti deny-list).
+  REDIS_URL: {{ .Values.config.redis.url | quote }}
+
+  # ---- JWT validation (RFC 8725) — non-secret knobs ----------------------
+  JWT_ISSUER: {{ .Values.config.jwt.issuer | quote }}
+  JWT_AUDIENCE: {{ .Values.config.jwt.audience | quote }}
+  JWT_ALGORITHM: {{ .Values.config.jwt.algorithm | quote }}
+  ACCESS_TTL_SECONDS: {{ .Values.config.jwt.accessTtlSeconds | quote }}
+  REFRESH_TTL_SECONDS: {{ .Values.config.jwt.refreshTtlSeconds | quote }}
+
+  # ---- Agent model + cost/abuse caps (§5 guardrails) ---------------------
+  RESEARCH_MODEL: {{ .Values.config.research.model | quote }}
+  MAX_SUBQUESTIONS: {{ .Values.config.research.maxSubquestions | quote }}
+  MAX_SOURCES_PER_Q: {{ .Values.config.research.maxSourcesPerQ | quote }}
+  MAX_CRITIC_LOOPS: {{ .Values.config.research.maxCriticLoops | quote }}
+  PER_RUN_TOKEN_BUDGET: {{ .Values.config.research.perRunTokenBudget | quote }}
+  PER_USER_DAILY_RUN_QUOTA: {{ .Values.config.research.perUserDailyRunQuota | quote }}
+  {{- with .Values.config.extraEnv }}
+
+  # ---- Extra operator-supplied non-secret env ----------------------------
+  {{- range $k, $v := . }}
+  {{ $k }}: {{ $v | quote }}
+  {{- end }}
+  {{- end }}

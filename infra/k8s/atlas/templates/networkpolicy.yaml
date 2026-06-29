@@ -1,0 +1,197 @@
+{{- if .Values.networkPolicy.enabled }}
+{{- /*
+  Default-deny baseline + least-privilege explicit allows (§11.2 SSRF/egress).
+  Requires a NetworkPolicy-enforcing CNI (e.g. VPC CNI with the network policy
+  controller, or Calico/Cilium).
+*/ -}}
+# ---------------------------------------------------------------------------
+# 1. Default deny ALL ingress + egress for every pod in the namespace.
+# ---------------------------------------------------------------------------
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "atlas.fullname" . }}-default-deny
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "atlas.labels" . | nindent 4 }}
+spec:
+  podSelector: {}
+  policyTypes:
+    - Ingress
+    - Egress
+---
+# ---------------------------------------------------------------------------
+# 2. Allow DNS (UDP+TCP 53) egress for all Atlas pods.
+# ---------------------------------------------------------------------------
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "atlas.fullname" . }}-allow-dns
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "atlas.labels" . | nindent 4 }}
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/part-of: atlas
+  policyTypes:
+    - Egress
+  egress:
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              {{ .Values.networkPolicy.dns.namespaceLabel }}: {{ .Values.networkPolicy.dns.namespaceValue }}
+          podSelector:
+            matchLabels:
+              {{ .Values.networkPolicy.dns.podLabelKey }}: {{ .Values.networkPolicy.dns.podLabelValue }}
+      ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53
+---
+# ---------------------------------------------------------------------------
+# 3. Allow EKS Pod Identity Agent egress (workload identity) for all pods.
+# ---------------------------------------------------------------------------
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "atlas.fullname" . }}-allow-pod-identity
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "atlas.labels" . | nindent 4 }}
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/part-of: atlas
+  policyTypes:
+    - Egress
+  egress:
+    - to:
+        - ipBlock:
+            cidr: {{ .Values.networkPolicy.awsPodIdentity.cidr | quote }}
+      ports:
+        - protocol: TCP
+          port: {{ .Values.networkPolicy.awsPodIdentity.port }}
+---
+# ---------------------------------------------------------------------------
+# 4. API: allow ingress on http (from ALB CIDRs) + egress to Redis & PgBouncer.
+# ---------------------------------------------------------------------------
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "atlas.api.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "atlas.api.labels" . | nindent 4 }}
+spec:
+  podSelector:
+    matchLabels:
+      {{- include "atlas.api.selectorLabels" . | nindent 6 }}
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    - from:
+        {{- range .Values.networkPolicy.apiIngress.fromCidrs }}
+        - ipBlock:
+            cidr: {{ . | quote }}
+        {{- end }}
+      ports:
+        - protocol: TCP
+          port: {{ .Values.api.containerPort }}
+  egress:
+    # -> Redis (queue enqueue, Stream tail, jti deny-list)
+    - to:
+        - podSelector:
+            matchLabels:
+              {{ .Values.networkPolicy.redis.podLabelKey }}: {{ .Values.networkPolicy.redis.podLabelValue }}
+      ports:
+        - protocol: TCP
+          port: {{ .Values.networkPolicy.redis.port }}
+    # -> PgBouncer (DB writes/reads)
+    - to:
+        - podSelector:
+            matchLabels:
+              {{ .Values.networkPolicy.pgbouncer.podLabelKey }}: {{ .Values.networkPolicy.pgbouncer.podLabelValue }}
+      ports:
+        - protocol: TCP
+          port: {{ .Values.networkPolicy.pgbouncer.port }}
+---
+# ---------------------------------------------------------------------------
+# 5. Worker: egress to Redis, PgBouncer (checkpointer), and HTTPS 443 only
+#    (provider APIs), with IMDS/RFC1918 carved out. No ingress.
+# ---------------------------------------------------------------------------
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "atlas.worker.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "atlas.worker.labels" . | nindent 4 }}
+spec:
+  podSelector:
+    matchLabels:
+      {{- include "atlas.worker.selectorLabels" . | nindent 6 }}
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress: []
+  egress:
+    # -> Redis
+    - to:
+        - podSelector:
+            matchLabels:
+              {{ .Values.networkPolicy.redis.podLabelKey }}: {{ .Values.networkPolicy.redis.podLabelValue }}
+      ports:
+        - protocol: TCP
+          port: {{ .Values.networkPolicy.redis.port }}
+    # -> PgBouncer (LangGraph Postgres checkpointer)
+    - to:
+        - podSelector:
+            matchLabels:
+              {{ .Values.networkPolicy.pgbouncer.podLabelKey }}: {{ .Values.networkPolicy.pgbouncer.podLabelValue }}
+      ports:
+        - protocol: TCP
+          port: {{ .Values.networkPolicy.pgbouncer.port }}
+    # -> HTTPS 443 to provider APIs, excluding IMDS + private ranges (SSRF).
+    - to:
+        {{- range .Values.networkPolicy.egress.httpsCidrs }}
+        - ipBlock:
+            cidr: {{ . | quote }}
+            except:
+              {{- range $.Values.networkPolicy.egress.blockedCidrs }}
+              - {{ . | quote }}
+              {{- end }}
+        {{- end }}
+      ports:
+        - protocol: TCP
+          port: 443
+---
+# ---------------------------------------------------------------------------
+# 6. Migration hook Job: egress to PgBouncer only.
+# ---------------------------------------------------------------------------
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "atlas.fullname" . }}-migration
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "atlas.labels" . | nindent 4 }}
+    app.kubernetes.io/component: migration
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/part-of: atlas
+      app.kubernetes.io/component: migration
+  policyTypes:
+    - Egress
+  egress:
+    - to:
+        - podSelector:
+            matchLabels:
+              {{ .Values.networkPolicy.pgbouncer.podLabelKey }}: {{ .Values.networkPolicy.pgbouncer.podLabelValue }}
+      ports:
+        - protocol: TCP
+          port: {{ .Values.networkPolicy.pgbouncer.port }}
+{{- end }}

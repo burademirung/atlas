@@ -1,0 +1,23 @@
+Atlas {{ .Chart.AppVersion }} has been deployed as release "{{ .Release.Name }}" in namespace "{{ .Release.Namespace }}".
+
+Components:
+  API      : Deployment {{ include "atlas.api.fullname" . }} (replicas via {{ if .Values.api.hpa.enabled }}HPA{{ else }}static count {{ .Values.api.replicaCount }}{{ end }})
+  Worker   : Deployment {{ include "atlas.worker.fullname" . }} ({{ if .Values.keda.enabled }}KEDA ScaledObject, {{ .Values.keda.minReplicaCount }}-{{ .Values.keda.maxReplicaCount }} replicas{{ else }}static count {{ .Values.worker.replicaCount }}{{ end }})
+
+Useful commands:
+  kubectl -n {{ .Release.Namespace }} get pods -l app.kubernetes.io/instance={{ .Release.Name }}
+  kubectl -n {{ .Release.Namespace }} rollout status deploy/{{ include "atlas.api.fullname" . }}
+{{- if .Values.keda.enabled }}
+  kubectl -n {{ .Release.Namespace }} get scaledobject {{ include "atlas.worker.fullname" . }}
+{{- end }}
+{{- if .Values.externalSecrets.enabled }}
+  kubectl -n {{ .Release.Namespace }} get externalsecret {{ include "atlas.secretName" . }}
+{{- end }}
+{{- if .Values.ingress.enabled }}
+
+The API is exposed at: https://{{ .Values.ingress.host }}{{ .Values.ingress.path }}
+(DNS must point at the ALB provisioned by the AWS Load Balancer Controller.)
+{{- end }}
+
+Reminder: KEDA, External Secrets Operator and the AWS Load Balancer Controller
+are cluster add-ons and must already be installed (see chart README).

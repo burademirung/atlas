@@ -1,0 +1,44 @@
+{{- if .Values.keda.enabled }}
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: {{ include "atlas.worker.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "atlas.worker.labels" . | nindent 4 }}
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: {{ include "atlas.worker.fullname" . }}
+  pollingInterval: {{ .Values.keda.pollingInterval }}
+  cooldownPeriod: {{ .Values.keda.cooldownPeriod }}
+  minReplicaCount: {{ .Values.keda.minReplicaCount }}
+  maxReplicaCount: {{ .Values.keda.maxReplicaCount }}
+  {{- if .Values.keda.idleReplicaCount }}
+  idleReplicaCount: {{ .Values.keda.idleReplicaCount }}
+  {{- end }}
+  {{- with .Values.keda.fallback }}
+  fallback:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  {{- with .Values.keda.advanced }}
+  advanced:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  triggers:
+    # Redis list scaler: targets queue_depth / listLength replicas, scaling the
+    # arq worker on the depth of the `{{ .Values.keda.redis.listName }}` queue.
+    - type: redis
+      metadata:
+        address: {{ .Values.keda.redis.address | quote }}
+        listName: {{ .Values.keda.redis.listName | quote }}
+        listLength: {{ .Values.keda.redis.lagThreshold | quote }}
+        activationListLength: {{ .Values.keda.redis.activationLagThreshold | quote }}
+        enableTLS: {{ .Values.keda.redis.enableTLS | quote }}
+        databaseIndex: {{ .Values.keda.redis.databaseIndex | quote }}
+      {{- if .Values.keda.redis.authenticationRef.enabled }}
+      authenticationRef:
+        name: {{ .Values.keda.redis.authenticationRef.name }}
+      {{- end }}
+{{- end }}
