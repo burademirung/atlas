@@ -155,8 +155,9 @@ function withSecurityHeaders(resp: Response): Response {
 export function redactPII(text: string): string {
   let out = text;
   // Emails first (before phone/CC digit runs can chew into them).
-  // ReDoS-free: flat X+@Y+, no nested quantifier (CodeQL js/polynomial-redos).
-  out = out.replace(/[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+/g, "[redacted-email]");
+  // Linear-time: the leading negative lookbehind stops the greedy local-part run
+  // from re-matching at every scan position (avoids O(n^2) — CodeQL js/polynomial-redos).
+  out = out.replace(/(?<![A-Za-z0-9._%+-])[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+/g, "[redacted-email]");
   // US SSN: 123-45-6789 or 123456789.
   out = out.replace(/\b\d{3}-?\d{2}-?\d{4}\b/g, "[redacted-ssn]");
   // Credit-card-like: 13–19 digit runs allowing space/dash separators; Luhn-checked

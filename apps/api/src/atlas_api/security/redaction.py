@@ -31,10 +31,11 @@ EMAIL_TOKEN = "[redacted-email]"  # noqa: S105  # nosec B105 - redaction placeho
 PHONE_TOKEN = "[redacted-phone]"  # noqa: S105  # nosec B105 - redaction placeholder, not a secret
 
 # Email — handled first so digits inside an address are not re-matched as SSN/CC.
-# ReDoS-free by construction: two flat, non-overlapping character runs joined by
-# a literal '@' (X+@Y+), no nested quantifier. For *redaction* we don't need TLD
-# precision — masking user@host(.domain) is enough (CodeQL py/polynomial-redos).
-_EMAIL_RE = re.compile(r"[A-Za-z0-9._%+\-]+@[A-Za-z0-9.\-]+")
+# Linear-time: the leading negative lookbehind means the greedy local-part run
+# only starts at a true boundary, so the global scan can't re-match it from every
+# position (avoids O(n^2) — CodeQL py/polynomial-redos). TLD precision is not
+# needed for redaction; masking user@host(.domain) is enough.
+_EMAIL_RE = re.compile(r"(?<![A-Za-z0-9._%+\-])[A-Za-z0-9._%+\-]+@[A-Za-z0-9.\-]+")
 # US SSN in its canonical dashed/spaced 3-2-4 grouping.
 _SSN_RE = re.compile(r"\b\d{3}[-\s]\d{2}[-\s]\d{4}\b")
 # Credit-card-like: 13-19 digits, optionally separated by spaces or dashes.
