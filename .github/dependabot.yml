@@ -1,59 +1,74 @@
 # Dependabot — weekly dependency + action updates for every ecosystem in Atlas.
 #
+# Policy: Dependabot auto-proposes only **minor/patch** updates, grouped into a
+# single PR per ecosystem (low-noise, safe to merge once CI is green). **Major**
+# bumps are ignored here and done deliberately (they routinely carry breaking
+# changes — AWS provider 6, redis 8, pytest 9, the Python runtime, TS 6, etc.).
+# Adding the major ignore also auto-closes existing major-bump PRs.
+#
 # Notes:
-#   * apps/api is managed with `uv`, but its dependencies live in pyproject.toml
-#     / uv.lock which Dependabot reads via the `pip` ecosystem (PEP 621 +
-#     uv.lock support). No `uv` ecosystem keyword exists.
-#   * github-actions at "/" also discovers actions in reusable workflows; keep
-#     SHA pins — Dependabot bumps the pin and updates the trailing version
-#     comment for you.
+#   * apps/api uses `uv`; its deps live in pyproject.toml / uv.lock which
+#     Dependabot reads via the `pip` ecosystem. No `uv` ecosystem keyword exists.
+#   * github-actions keeps SHA pins — Dependabot bumps the pin and the trailing
+#     version comment together.
 version: 2
 
 updates:
   # ---- Python (FastAPI API + LangGraph agent graph) ----
   - package-ecosystem: pip
     directory: /apps/api
-    schedule:
-      interval: weekly
-      day: monday
-      time: "06:00"
-    open-pull-requests-limit: 10
+    schedule: { interval: weekly, day: monday, time: "06:00" }
+    open-pull-requests-limit: 5
     groups:
-      python-minor-patch:
+      python:
         update-types: [minor, patch]
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
     labels: [dependencies, python]
-    commit-message:
-      prefix: "deps(api)"
+    commit-message: { prefix: "deps(api)" }
 
-  # ---- Node (Cloudflare Worker + SPA) ----
+  # ---- Node (Cloudflare Worker) ----
   - package-ecosystem: npm
     directory: /apps/cloudflare
-    schedule:
-      interval: weekly
-      day: monday
-      time: "06:00"
-    open-pull-requests-limit: 10
+    schedule: { interval: weekly, day: monday, time: "06:00" }
+    open-pull-requests-limit: 5
     groups:
-      npm-minor-patch:
+      npm:
         update-types: [minor, patch]
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
     labels: [dependencies, javascript]
-    commit-message:
-      prefix: "deps(web)"
+    commit-message: { prefix: "deps(web)" }
+
+  # ---- Node (production React SPA) ----
+  - package-ecosystem: npm
+    directory: /apps/web
+    schedule: { interval: weekly, day: monday, time: "06:00" }
+    open-pull-requests-limit: 5
+    groups:
+      npm:
+        update-types: [minor, patch]
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
+    labels: [dependencies, javascript]
+    commit-message: { prefix: "deps(web)" }
 
   # ---- GitHub Actions (SHA pins across all workflows) ----
   - package-ecosystem: github-actions
     directory: /
-    schedule:
-      interval: weekly
-      day: monday
-      time: "06:00"
-    open-pull-requests-limit: 10
+    schedule: { interval: weekly, day: monday, time: "06:00" }
+    open-pull-requests-limit: 5
     groups:
       actions:
         update-types: [minor, patch]
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
     labels: [dependencies, github-actions]
-    commit-message:
-      prefix: "deps(ci)"
+    commit-message: { prefix: "deps(ci)" }
 
   # ---- Terraform (modules + per-env roots) ----
   - package-ecosystem: terraform
@@ -61,23 +76,24 @@ updates:
       - /infra/terraform/modules/*
       - /infra/terraform/envs/dev
       - /infra/terraform/envs/prod
-    schedule:
-      interval: weekly
-      day: monday
-      time: "06:00"
-    open-pull-requests-limit: 10
-    labels: [dependencies, terraform]
-    commit-message:
-      prefix: "deps(infra)"
-
-  # ---- Docker base images (API / worker) ----
-  - package-ecosystem: docker
-    directory: /apps/api
-    schedule:
-      interval: weekly
-      day: monday
-      time: "06:00"
+    schedule: { interval: weekly, day: monday, time: "06:00" }
     open-pull-requests-limit: 5
+    groups:
+      terraform:
+        update-types: [minor, patch]
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
+    labels: [dependencies, terraform]
+    commit-message: { prefix: "deps(infra)" }
+
+  # ---- Docker base images (API + web) ----
+  - package-ecosystem: docker
+    directories: ["/apps/api", "/apps/web"]
+    schedule: { interval: weekly, day: monday, time: "06:00" }
+    open-pull-requests-limit: 5
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
     labels: [dependencies, docker]
-    commit-message:
-      prefix: "deps(docker)"
+    commit-message: { prefix: "deps(docker)" }
