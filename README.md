@@ -255,7 +255,7 @@ The full map is the [documentation index](docs/README.md) (organized by the
 - [`infra/terraform/README.md`](infra/terraform/README.md) — the Terraform root + modules
 - [`infra/k8s/README.md`](infra/k8s/README.md) — the Kubernetes manifests overview
 - [`infra/k8s/atlas/README.md`](infra/k8s/atlas/README.md) — the Atlas Helm chart
-- [`.github/README.md`](.github/README.md) — the CI/CD workflows
+- [`.github/WORKFLOWS.md`](.github/WORKFLOWS.md) — the CI/CD workflows
 
 **Project meta**
 
