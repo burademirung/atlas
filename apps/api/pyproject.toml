@@ -35,7 +35,7 @@ dev = [
     "pytest-asyncio>=1.0",
     "pytest-cov>=6.0",
     "testcontainers[postgres,redis]>=4.13",
-    "ruff>=0.13",
+    "ruff>=0.15.20",
     "mypy>=1.14",
 ]
 
