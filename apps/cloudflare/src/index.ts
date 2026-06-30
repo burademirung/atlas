@@ -337,7 +337,8 @@ async function runResearch(
           send("agent", { agent: "searcher" });
         } else if (cb.type === "web_search_tool_result") {
           send("status", { phase: "verifying", label: "Assessing urgency" });
-          for (const r of cb.content ?? []) {
+          // On a search error, `content` is an error object, not an array of results.
+          for (const r of Array.isArray(cb.content) ? cb.content : []) {
             if (r.type !== "web_search_result" || !r.url) continue;
             if (seen.has(r.url)) continue;
             seen.add(r.url);

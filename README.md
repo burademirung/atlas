@@ -11,6 +11,9 @@ users can browse history and re-run.
 The product is also the vehicle for demonstrating a complete, production-grade stack — every
 required technology is **load-bearing, not decorative**. See [`STACK.md`](STACK.md) for the map.
 
+> **New here?** Read [`AGENTS.md`](AGENTS.md) (the guide for AI agents and contributors:
+> commands, conventions, guardrails) and browse the full [documentation index](docs/README.md).
+
 **Status**
 
 - Live edition — deployed: <https://atlas-research.burademirung.workers.dev>
@@ -207,12 +210,42 @@ runs per-PR via `tests/test_evals.py`.
 
 ## Documentation
 
-| Doc | What's in it |
-|---|---|
-| [`docs/architecture.md`](docs/architecture.md) | C4 context + container views, request sequence diagram, the 7-table data model |
-| [`docs/runbook.md`](docs/runbook.md) | Deploy both editions, secrets/env, migrations, rollback, eval, failure modes |
-| [`docs/threat-model.md`](docs/threat-model.md) | Attack paths + mitigations (prompt injection, denial-of-wallet, XSS, SSRF, authn/z, secrets, PII) |
-| [`docs/cost-notes.md`](docs/cost-notes.md) | Cost model for both editions + how to keep dev cheap |
-| [`docs/adr/`](docs/adr/) | Architecture Decision Records |
-| [`STACK.md`](STACK.md) | Where each required technology lives, with evidence |
-| [`docs/superpowers/specs/`](docs/superpowers/specs/) | The full design spec behind Atlas |
+The full map is the [documentation index](docs/README.md) (organized by the
+[Diátaxis](https://diataxis.fr/) framework). Quick links, grouped:
+
+**Getting started**
+
+- [`AGENTS.md`](AGENTS.md) — commands, conventions, and guardrails for AI agents & contributors
+- [`docs/development.md`](docs/development.md) — local dev setup (API, worker, Worker, web, compose)
+- [`CONTRIBUTING.md`](CONTRIBUTING.md) — set up, branch, commit, test, open a PR
+
+**Architecture & design**
+
+- [`docs/architecture.md`](docs/architecture.md) — C4 context + container views, request sequence, data model
+- [`docs/agent-design.md`](docs/agent-design.md) — the LangGraph graph, fan-out, verify, spotlighting, playbooks, MCP, evals
+- [`docs/data-model.md`](docs/data-model.md) — the Postgres 7-table schema and the Cloudflare D1 schema
+- [`docs/api-reference.md`](docs/api-reference.md) — the Worker `/api/*` and FastAPI `/v1/*` surfaces + SSE events
+- [`STACK.md`](STACK.md) — where each required technology lives, with evidence
+
+**Operations**
+
+- [`docs/deployment.md`](docs/deployment.md) — how each edition deploys (wrangler, Terraform, Helm, CI/CD)
+- [`docs/runbook.md`](docs/runbook.md) — deploy, secrets/env, migrations, rollback, eval, failure modes
+- [`docs/testing.md`](docs/testing.md) — pytest + testcontainers, Vitest, deterministic agent tests, evals
+- [`docs/observability.md`](docs/observability.md) — logging, metrics, tracing (implemented vs planned)
+- [`docs/cost-notes.md`](docs/cost-notes.md) — cost model for both editions + how to keep dev cheap
+
+**Security**
+
+- [`SECURITY.md`](SECURITY.md) — vulnerability disclosure policy + posture summary
+- [`docs/security.md`](docs/security.md) — defense-in-depth security architecture (OWASP/NIST mapped)
+- [`docs/threat-model.md`](docs/threat-model.md) — attack paths + mitigations (prompt injection, denial-of-wallet, XSS, SSRF, authn/z, secrets, PII)
+
+**Decisions (ADRs)**
+
+- [`docs/adr/`](docs/adr/) — Architecture Decision Records (editions, LangGraph, Redis Streams, KEDA, per-env state)
+
+**Project meta**
+
+- [`CHANGELOG.md`](CHANGELOG.md) · [`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md) · [`docs/documentation-strategy.md`](docs/documentation-strategy.md) — why this doc set exists
+- [`docs/superpowers/specs/`](docs/superpowers/specs/) — the full design spec behind Atlas

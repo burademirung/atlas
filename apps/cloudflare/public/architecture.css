@@ -147,7 +147,7 @@
 
 /* sticky 3D stage */
 .stage-wrap { position: sticky; top: 80px; }
-.stage {
+.scrolly .stage {
   position: relative;
   aspect-ratio: 800 / 600;
   border-radius: 22px;
@@ -158,7 +158,7 @@
   overflow: hidden;
   perspective: 1300px;
 }
-.stage::after {
+.scrolly .stage::after {
   /* subtle isometric grid floor */
   content: "";
   position: absolute;
@@ -215,6 +215,34 @@
 }
 .node-block.edge { background: linear-gradient(150deg, #fff6e6, #ffe9c4); }
 .node-block.db { background: linear-gradient(150deg, #eaf0ff, #d9e4ff); }
+.node-block.api { background: linear-gradient(150deg, #eafaf0, #cdeed8); }
+.node-block.redis { background: linear-gradient(150deg, #ffecea, #ffd6cf); }
+.node-block.lang { background: linear-gradient(150deg, #f3edff, #e0d2ff); }
+.node-block.pg { background: linear-gradient(150deg, #eaf0ff, #d4e2ff); }
+.node-block.k8s { background: linear-gradient(150deg, #e9f1ff, #cfe0ff); }
+.node-block.aws { background: linear-gradient(150deg, #fff1e0, #ffdcb0); }
+.node-block.tf { background: linear-gradient(150deg, #f0ecff, #d8ccff); }
+.node-block.gha { background: linear-gradient(150deg, #f0f0f3, #dadae2); }
+.node-block.react { background: linear-gradient(150deg, #e6f9ff, #c6ecf7); }
+.node-block.def { background: linear-gradient(150deg, #fdeede, #f6d9b4); }
+.node-block.sse { background: linear-gradient(150deg, #fff4e2, #ffe6bb); }
+.node-block.mcp { background: linear-gradient(150deg, #e4f7f2, #c5ebe0); }
+.node-block.docker { background: linear-gradient(150deg, #e7f1ff, #c9e0ff); }
+.node-block.test { background: linear-gradient(150deg, #eafaf0, #cdeed8); }
+.node-block.otel { background: linear-gradient(150deg, #f1ecff, #dccdff); }
+
+/* smaller supporting nodes (production stack) keep the hero live path dominant */
+.node.sm .node-block {
+  width: 60px; height: 46px;
+  font-size: 21px;
+  border-radius: 12px;
+  box-shadow:
+    0 2px 0 #e7dfcd, 0 3px 0 #ddd3bd, 0 5px 0 #d3c8af,
+    0 8px 0 #cabd9f, 0 16px 24px -12px rgba(29, 26, 20, 0.4);
+}
+.node.sm .node-label { margin-top: 9px; }
+.node.sm .node-label b { font-size: 12px; }
+.node.sm .node-label i { font-size: 10.5px; }
 .node-block.orb {
   position: relative;
   border-radius: 50%;
@@ -254,10 +282,42 @@
 .stage[data-active~="edge"] .node[data-node="edge"],
 .stage[data-active~="claude"] .node[data-node="claude"],
 .stage[data-active~="web"] .node[data-node="web"],
-.stage[data-active~="d1"] .node[data-node="d1"] {
+.stage[data-active~="d1"] .node[data-node="d1"],
+.stage[data-active~="api"] .node[data-node="api"],
+.stage[data-active~="redis"] .node[data-node="redis"],
+.stage[data-active~="lang"] .node[data-node="lang"],
+.stage[data-active~="pg"] .node[data-node="pg"],
+.stage[data-active~="k8s"] .node[data-node="k8s"],
+.stage[data-active~="aws"] .node[data-node="aws"],
+.stage[data-active~="tf"] .node[data-node="tf"],
+.stage[data-active~="gha"] .node[data-node="gha"],
+.stage[data-active~="react"] .node[data-node="react"],
+.stage[data-active~="def"] .node[data-node="def"],
+.stage[data-active~="sse"] .node[data-node="sse"],
+.stage[data-active~="mcp"] .node[data-node="mcp"],
+.stage[data-active~="docker"] .node[data-node="docker"],
+.stage[data-active~="test"] .node[data-node="test"],
+.stage[data-active~="otel"] .node[data-node="otel"] {
   opacity: 1;
   filter: none;
   transform: translate(-50%, -50%) translateZ(48px);
+}
+.stage[data-active~="api"] .node.sm[data-node="api"],
+.stage[data-active~="redis"] .node.sm[data-node="redis"],
+.stage[data-active~="lang"] .node.sm[data-node="lang"],
+.stage[data-active~="pg"] .node.sm[data-node="pg"],
+.stage[data-active~="k8s"] .node.sm[data-node="k8s"],
+.stage[data-active~="aws"] .node.sm[data-node="aws"],
+.stage[data-active~="tf"] .node.sm[data-node="tf"],
+.stage[data-active~="gha"] .node.sm[data-node="gha"],
+.stage[data-active~="react"] .node.sm[data-node="react"],
+.stage[data-active~="def"] .node.sm[data-node="def"],
+.stage[data-active~="sse"] .node.sm[data-node="sse"],
+.stage[data-active~="mcp"] .node.sm[data-node="mcp"],
+.stage[data-active~="docker"] .node.sm[data-node="docker"],
+.stage[data-active~="test"] .node.sm[data-node="test"],
+.stage[data-active~="otel"] .node.sm[data-node="otel"] {
+  transform: translate(-50%, -50%) translateZ(40px) scale(1.04);
 }
 .stage[data-active~="claude"] .node[data-node="claude"] .pulse { animation: orbPulse 1.4s ease-out infinite; }
 @keyframes orbPulse {
@@ -463,7 +523,33 @@
   box-shadow: 0 22px 46px -26px rgba(29, 26, 20, 0.5);
 }
 .tech-card:focus-visible { outline: 2px solid var(--gold-soft); outline-offset: 2px; }
+a.tech-card { text-decoration: none; color: inherit; }
+a.tech-card h5::after {
+  content: " ↗";
+  color: var(--gold);
+  font-weight: 400;
+  font-size: 0.82em;
+}
+.tc-cat {
+  display: inline-block;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.13em;
+  font-weight: 600;
+  color: var(--gold);
+  margin-bottom: 9px;
+}
 .tech-card h5 { font-weight: 600; font-size: 15.5px; margin-bottom: 6px; }
+.tc-meta {
+  display: block;
+  margin-top: 11px;
+  padding-top: 10px;
+  border-top: 1px solid var(--line);
+  font-family: "JetBrains Mono", monospace;
+  font-size: 10.5px;
+  line-height: 1.55;
+  color: var(--dim);
+}
 .tech-card p { color: var(--faint); font-size: 13px; line-height: 1.5; margin: 0; }
 
 /* ───────────────────────────── requirements map ───────────────────────────── */
@@ -539,6 +625,118 @@
 .big-cta:hover { filter: brightness(1.05); }
 .big-cta:active { transform: translateY(1px); }
 
+/* ───────────────────────────── standards & best practices ───────────────────────────── */
+.ex-std { padding: 14px 0 56px; }
+.ex-std .ex-head { margin-bottom: 28px; }
+.std-block {
+  max-width: 1320px;
+  margin: 0 auto 34px;
+  padding: 0 32px;
+}
+.std-block:last-child { margin-bottom: 0; }
+.std-h {
+  font-weight: 600;
+  font-size: 13px;
+  letter-spacing: 0.02em;
+  color: var(--ink);
+  margin: 0 0 16px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--line);
+}
+.bp-cols {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 22px;
+}
+.bp-col-label {
+  display: block;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--gold);
+  font-weight: 600;
+  margin-bottom: 12px;
+}
+.bp-list { list-style: none; margin: 0; padding: 0; }
+.bp-list li {
+  position: relative;
+  padding: 0 0 9px 20px;
+  color: var(--dim);
+  font-size: 13.5px;
+  line-height: 1.5;
+}
+.bp-list li::before {
+  content: "✓";
+  position: absolute;
+  left: 0;
+  top: 0;
+  color: var(--green);
+  font-weight: 700;
+  font-size: 12px;
+}
+.bp-list code {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 11.5px;
+  color: var(--gold);
+  background: var(--paper2);
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  padding: 1px 5px;
+}
+.std-group { margin-bottom: 22px; }
+.std-group:last-child { margin-bottom: 0; }
+.std-group-label {
+  display: block;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--faint);
+  font-weight: 600;
+  margin-bottom: 12px;
+}
+.std-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+}
+.std-card {
+  display: block;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 14px 15px;
+  text-decoration: none;
+  box-shadow: 0 1px 2px rgba(29, 26, 20, 0.04);
+  transition: transform 0.16s ease-out, box-shadow 0.16s, border-color 0.16s;
+}
+.std-card:hover,
+.std-card:focus-visible {
+  transform: translateY(-2px);
+  border-color: var(--gold-soft);
+  box-shadow: 0 18px 38px -24px rgba(29, 26, 20, 0.5);
+  outline: none;
+}
+.std-card:focus-visible { outline: 2px solid var(--gold-soft); outline-offset: 2px; }
+.std-card b {
+  display: block;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--ink);
+  margin-bottom: 4px;
+}
+.std-card b::after {
+  content: " ↗";
+  color: var(--gold);
+  font-weight: 400;
+}
+.std-card i {
+  display: block;
+  font-style: normal;
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--faint);
+}
+
 /* ───────────────────────────── responsive ───────────────────────────── */
 @media (max-width: 900px) {
   .cast-grid { grid-template-columns: 1fr; }
@@ -548,6 +746,11 @@
   .step { min-height: auto; padding: 28px 0; opacity: 1; }
   .bp-view { flex-direction: column; align-items: center; }
   .bp-arrow { transform: rotate(90deg); }
+  .bp-cols { grid-template-columns: 1fr; gap: 24px; }
+  .std-grid { grid-template-columns: 1fr 1fr; }
+}
+@media (max-width: 560px) {
+  .std-grid { grid-template-columns: 1fr; }
 }
 
 /* ───────────────────────────── reduced motion ───────────────────────────── */

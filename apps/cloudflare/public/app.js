@@ -1,4 +1,4 @@
-import { escapeHtml, renderMarkdown } from "./render.js";
+import { escapeHtml, renderMarkdown } from "./render.js?v=13";
 
 const $ = (sel) => document.querySelector(sel);
 const stagesEl = $("#stages");

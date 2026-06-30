@@ -47,14 +47,20 @@
     }
 
     const STEPS = {
-      1: { active: ["you"], wire: null },
-      2: { active: ["you", "edge"], wire: "w-you-edge" },
-      3: { active: ["edge", "claude"], wire: "w-edge-claude" },
-      4: { active: ["claude"], wire: null },
-      5: { active: ["claude", "web"], wire: "w-claude-web", particles: 4 },
-      6: { active: ["claude", "edge", "you"], wire: "w-stream", particles: 7, stream: true },
-      7: { active: ["you"], wire: null, render: true },
-      8: { active: ["edge", "d1"], wire: "w-edge-d1" },
+      1: { active: ["you", "react"], wire: null },
+      2: { active: ["you", "react", "edge", "def", "api"], wire: "w-you-edge" },
+      3: { active: ["api", "redis"], wire: "w-api-redis" },
+      4: { active: ["redis", "lang"], wire: "w-redis-lang" },
+      5: { active: ["lang", "claude", "mcp"], wire: "w-lang-claude" },
+      6: { active: ["claude", "web"], wire: "w-claude-web", particles: 4 },
+      7: { active: ["claude", "edge", "you", "sse"], wire: "w-stream", particles: 7, stream: true, render: true },
+      8: { active: ["edge", "d1", "pg"], wire: "w-edge-d1" },
+      9: { active: ["docker", "api", "lang"], wire: null },
+      10: { active: ["k8s", "docker", "api", "redis", "lang"], wire: null },
+      11: { active: ["aws", "k8s", "pg"], wire: null },
+      12: { active: ["tf", "aws"], wire: null },
+      13: { active: ["gha", "test", "edge", "api"], wire: null },
+      14: { active: ["otel", "api", "lang", "k8s"], wire: null },
     };
 
     let current = 0;

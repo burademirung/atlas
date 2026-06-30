@@ -14,8 +14,8 @@
       href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,900&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="/styles.css" />
-    <link rel="stylesheet" href="/architecture.css" />
+    <link rel="stylesheet" href="/styles.css?v=13" />
+    <link rel="stylesheet" href="/architecture.css?v=13" />
   </head>
   <body>
     <div class="grain" aria-hidden="true"></div>
@@ -45,6 +45,9 @@
 
     <main class="layout">
       <section class="composer">
+        <a class="gh-cta blink" href="https://github.com/burademirung/atlas" target="_blank" rel="noopener">
+          <span class="gh-mark">★</span> View the source on GitHub <span class="gh-arrow">→</span>
+        </a>
         <h1 class="hero">
           Your data was leaked?<br /><em>Here's exactly what to do.</em>
         </h1>
@@ -134,46 +137,6 @@
         </p>
       </div>
 
-      <!-- CAST -->
-      <section class="ex-cast">
-        <div class="ex-head">
-          <p class="ex-eyebrow">First, the cast</p>
-          <h3>Six parts, in plain language</h3>
-        </div>
-        <div class="cast-grid">
-          <article class="cast-card" style="--i: 0">
-            <div class="cc-ico">🧭</div><h4>Your browser</h4>
-            <p class="analogy">The person who walks in and says "here's what happened."</p>
-            <p class="tech">Sends your situation, then shows your plan as it streams in.</p>
-          </article>
-          <article class="cast-card" style="--i: 1">
-            <div class="cc-ico">🛰️</div><h4>Cloudflare Worker</h4>
-            <p class="analogy">A calm front desk with a presence in 300+ cities at once.</p>
-            <p class="tech">Code at the network edge, nearest to you. Routes the request.</p>
-          </article>
-          <article class="cast-card" style="--i: 2">
-            <div class="cc-ico">🧠</div><h4>Claude Opus 4.8</h4>
-            <p class="analogy">The breach-response analyst who triages and advises.</p>
-            <p class="tech">The AI model. Decides what to check, then writes your plan.</p>
-          </article>
-          <article class="cast-card" style="--i: 3">
-            <div class="cc-ico">🔎</div><h4>Web search tool</h4>
-            <p class="analogy">A reference desk limited to the official shelf.</p>
-            <p class="tech">Reads only official guidance — FTC, CISA, the credit bureaus.</p>
-          </article>
-          <article class="cast-card" style="--i: 4">
-            <div class="cc-ico">📡</div><h4>Live stream (SSE)</h4>
-            <p class="analogy">Someone reading you the plan as they write it, step by step.</p>
-            <p class="tech">Server-Sent Events push each update instead of making you wait.</p>
-          </article>
-          <article class="cast-card" style="--i: 5">
-            <div class="cc-ico">🗄️</div><h4>D1 database</h4>
-            <p class="analogy">The folder that keeps your plan so you can come back to it.</p>
-            <p class="tech">Cloudflare's edge SQL store. Every plan is saved for later.</p>
-          </article>
-        </div>
-      </section>
-
       <!-- JOURNEY (sticky 3D scrollytelling) -->
       <section class="ex-journey">
         <div class="ex-head center">
@@ -193,34 +156,121 @@
                       <feMerge><feMergeNode in="b" /><feMergeNode in="SourceGraphic" /></feMerge>
                     </filter>
                   </defs>
-                  <path id="w-you-edge" class="wire" d="M150,170 C220,210 230,250 300,290" />
-                  <path id="w-edge-claude" class="wire" d="M340,275 C420,235 430,210 480,195" />
-                  <path id="w-claude-web" class="wire" d="M540,175 C610,150 630,135 680,120" />
-                  <path id="w-stream" class="wire" d="M680,120 C600,170 560,210 500,205 C430,235 360,285 305,300 C240,250 200,205 150,180" />
-                  <path id="w-edge-d1" class="wire" d="M310,310 C370,360 415,420 462,452" />
+                  <path id="w-you-edge" class="wire" d="M100,105 C150,120 175,128 212,134" />
+                  <path id="w-you-react" class="wire" d="M88,118 C88,150 88,182 88,206" />
+                  <path id="w-react-edge" class="wire" d="M112,222 C150,200 180,176 208,156" />
+                  <path id="w-edge-def" class="wire" d="M222,160 C219,200 218,230 216,244" />
+                  <path id="w-edge-sse" class="wire" d="M236,118 C300,92 345,82 384,80" />
+                  <path id="w-sse-you" class="wire" d="M388,80 C280,62 168,72 106,86" />
+                  <path id="w-edge-api" class="wire" d="M232,160 C260,220 300,280 332,310" />
+                  <path id="w-api-redis" class="wire" d="M340,355 C350,390 358,410 366,432" />
+                  <path id="w-redis-lang" class="wire" d="M390,442 C420,425 448,402 470,388" />
+                  <path id="w-lang-claude" class="wire" d="M492,355 C540,290 580,210 596,178" />
+                  <path id="w-claude-mcp" class="wire" d="M606,184 C620,212 628,236 633,257" />
+                  <path id="w-claude-web" class="wire" d="M634,132 C668,112 694,98 712,88" />
+                  <path id="w-edge-d1" class="wire" d="M248,150 C290,165 330,176 352,182" />
+                  <path id="w-save-pg" class="wire" d="M388,205 C490,290 600,340 690,332" />
+                  <!-- platform / delivery / observability foundation -->
+                  <path id="w-api-docker" class="wire" d="M322,338 C260,352 190,366 130,374" />
+                  <path id="w-docker-k8s" class="wire" d="M108,400 C110,430 111,452 112,470" />
+                  <path id="w-k8s-aws" class="wire" d="M134,498 C172,503 202,505 234,508" />
+                  <path id="w-tf-aws" class="wire" d="M418,510 C372,510 322,508 280,508" />
+                  <path id="w-gha-tf" class="wire" d="M524,494 C500,502 482,506 462,510" />
+                  <path id="w-test-gha" class="wire" d="M624,448 C600,462 578,472 562,480" />
+                  <path id="w-otel-gha" class="wire" d="M716,522 C658,508 610,498 568,490" />
+                  <path id="w-stream" class="wire" d="M700,90 C610,120 530,150 455,150 C360,156 270,150 224,142 C170,124 130,106 100,94" />
                   <circle id="packet" class="packet" r="7" filter="url(#glow)" />
                   <g id="particles"></g>
                 </svg>
 
-                <div class="node" data-node="you" style="--x: 18.75%; --y: 28.33%">
+                <!-- client -->
+                <div class="node" data-node="you" style="--x: 11%; --y: 15%">
                   <div class="node-block"><span class="ni">🧭</span></div>
                   <div class="node-label"><b>You</b><i>browser</i></div>
                 </div>
-                <div class="node" data-node="edge" style="--x: 37.5%; --y: 50%">
+                <div class="node sm" data-node="react" style="--x: 11%; --y: 39%">
+                  <div class="node-block react"><span class="ni">⚛️</span></div>
+                  <div class="node-label"><b>React · Vite</b><i>the SPA</i></div>
+                </div>
+
+                <!-- edge -->
+                <div class="node" data-node="edge" style="--x: 28%; --y: 23%">
                   <div class="node-block edge"><span class="ni">🛰️</span></div>
                   <div class="node-label"><b>Cloudflare Worker</b><i>the edge</i></div>
                 </div>
-                <div class="node" data-node="claude" style="--x: 63.75%; --y: 32.5%">
+                <div class="node sm" data-node="def" style="--x: 27%; --y: 44%">
+                  <div class="node-block def"><span class="ni">🛡️</span></div>
+                  <div class="node-label"><b>Edge defenses</b><i>WAF · rate limit</i></div>
+                </div>
+                <div class="node" data-node="d1" style="--x: 46%; --y: 32.6%">
+                  <div class="node-block db"><span class="ni">🗄️</span></div>
+                  <div class="node-label"><b>D1 database</b><i>saved runs</i></div>
+                </div>
+
+                <!-- runtime -->
+                <div class="node sm" data-node="api" style="--x: 43%; --y: 54.2%">
+                  <div class="node-block api"><span class="ni">🐍</span></div>
+                  <div class="node-label"><b>Python · FastAPI</b><i>the API</i></div>
+                </div>
+                <div class="node sm" data-node="sse" style="--x: 51%; --y: 13%">
+                  <div class="node-block sse"><span class="ni">📡</span></div>
+                  <div class="node-label"><b>Server-Sent Events</b><i>live stream</i></div>
+                </div>
+                <div class="node sm" data-node="redis" style="--x: 44%; --y: 74%">
+                  <div class="node-block redis"><span class="ni">⚡</span></div>
+                  <div class="node-label"><b>Redis + arq</b><i>job queue</i></div>
+                </div>
+                <div class="node sm" data-node="lang" style="--x: 60%; --y: 63%">
+                  <div class="node-block lang"><span class="ni">🤖</span></div>
+                  <div class="node-label"><b>LangGraph</b><i>agent workers</i></div>
+                </div>
+
+                <!-- ai -->
+                <div class="node" data-node="claude" style="--x: 75%; --y: 23.9%">
                   <div class="node-block orb"><span class="pulse"></span><span class="ni">🧠</span></div>
                   <div class="node-label"><b>Claude Opus 4.8</b><i>the analyst</i></div>
                 </div>
-                <div class="node node-web" data-node="web" style="--x: 85%; --y: 20%">
+                <div class="node node-web" data-node="web" style="--x: 90%; --y: 14%">
                   <div class="web-tiles"><span></span><span></span><span></span><span></span></div>
                   <div class="node-label"><b>The live web</b><i>real sources</i></div>
                 </div>
-                <div class="node" data-node="d1" style="--x: 57.75%; --y: 75.33%">
-                  <div class="node-block db"><span class="ni">🗄️</span></div>
-                  <div class="node-label"><b>D1 database</b><i>saved runs</i></div>
+                <div class="node sm" data-node="mcp" style="--x: 79%; --y: 47%">
+                  <div class="node-block mcp"><span class="ni">🔌</span></div>
+                  <div class="node-label"><b>MCP server</b><i>breach tools</i></div>
+                </div>
+                <div class="node sm" data-node="pg" style="--x: 92%; --y: 56%">
+                  <div class="node-block pg"><span class="ni">🐘</span></div>
+                  <div class="node-label"><b>PostgreSQL</b><i>system of record</i></div>
+                </div>
+
+                <!-- platform / delivery -->
+                <div class="node sm" data-node="docker" style="--x: 13%; --y: 63%">
+                  <div class="node-block docker"><span class="ni">🐳</span></div>
+                  <div class="node-label"><b>Docker</b><i>containers</i></div>
+                </div>
+                <div class="node sm" data-node="k8s" style="--x: 14%; --y: 82%">
+                  <div class="node-block k8s"><span class="ni">☸️</span></div>
+                  <div class="node-label"><b>Kubernetes</b><i>EKS · autoscale</i></div>
+                </div>
+                <div class="node sm" data-node="aws" style="--x: 32%; --y: 84%">
+                  <div class="node-block aws"><span class="ni">☁️</span></div>
+                  <div class="node-label"><b>AWS</b><i>the cloud</i></div>
+                </div>
+                <div class="node sm" data-node="tf" style="--x: 55%; --y: 85%">
+                  <div class="node-block tf"><span class="ni">🌍</span></div>
+                  <div class="node-label"><b>Terraform</b><i>infra as code</i></div>
+                </div>
+                <div class="node sm" data-node="gha" style="--x: 68%; --y: 81%">
+                  <div class="node-block gha"><span class="ni">🚀</span></div>
+                  <div class="node-label"><b>GitHub Actions</b><i>CI/CD</i></div>
+                </div>
+                <div class="node sm" data-node="test" style="--x: 80%; --y: 72%">
+                  <div class="node-block test"><span class="ni">🧪</span></div>
+                  <div class="node-label"><b>Testing</b><i>pytest · Vitest</i></div>
+                </div>
+                <div class="node sm" data-node="otel" style="--x: 92%; --y: 88%">
+                  <div class="node-block otel"><span class="ni">📈</span></div>
+                  <div class="node-label"><b>OpenTelemetry</b><i>traces · metrics</i></div>
                 </div>
 
                 <div class="mock-report" id="mockReport" aria-hidden="true">
@@ -240,179 +290,90 @@
           <div class="steps" id="steps">
             <article class="step" data-step="1">
               <span class="step-no">01</span><h4>You describe what leaked.</h4>
-              <p>You type something like <em>“my passwords showed up in a data breach”</em>, tap the
-              data types that were exposed, and hit run. Your browser packages it up and sends it off.</p>
-              <p class="step-tech">Browser → <code>POST /api/research</code></p>
+              <p>In the app — a React + Vite single-page app — you type something like <em>“my passwords
+              showed up in a data breach”</em>, tap the data types exposed, and hit run.</p>
+              <p class="step-tech">React · Vite SPA → <code>POST /api/research</code></p>
             </article>
             <article class="step" data-step="2">
-              <span class="step-no">02</span><h4>The nearest city catches it.</h4>
-              <p>Your situation lands at a Cloudflare Worker in the data center closest to you — one of
-              300+ worldwide. No far-away server to wait on.</p>
-              <p class="step-tech">Cloudflare edge · runs in milliseconds, near the user</p>
+              <span class="step-no">02</span><h4>It reaches the front door.</h4>
+              <p>It lands at the edge — a Cloudflare Worker, or a FastAPI service in production — but first
+              it's screened: rate limits, a bot check, and allow-listing before anything runs.</p>
+              <p class="step-tech">Cloudflare Worker / FastAPI · Turnstile · rate limit</p>
             </article>
             <article class="step" data-step="3">
-              <span class="step-no">03</span><h4>Claude triages your situation.</h4>
-              <p>The Worker hands your situation to Claude along with instructions: <em>stay calm,
-              prioritize, cite official sources, keep it plain.</em></p>
-              <p class="step-tech">Worker → Anthropic API · <code>claude-opus-4-8</code></p>
+              <span class="step-no">03</span><h4>It joins the queue.</h4>
+              <p>Rather than make you wait on the wire, FastAPI drops the job on a Redis queue and hands
+              your browser a run id to stream from. The slow work happens in the background.</p>
+              <p class="step-tech">Redis + arq · durable background job queue</p>
             </article>
             <article class="step" data-step="4">
-              <span class="step-no">04</span><h4>It looks up the official guidance.</h4>
+              <span class="step-no">04</span><h4>A worker picks it up.</h4>
+              <p>An arq worker pulls the job and runs a LangGraph agent graph — <em>plan → search →
+              verify → write</em> — with parallel fan-out across sub-questions.</p>
+              <p class="step-tech">LangGraph · multi-agent, Claude-driven</p>
+            </article>
+            <article class="step" data-step="5">
+              <span class="step-no">05</span><h4>Claude triages your situation.</h4>
+              <p>The graph hands your situation to Claude with clear instructions, plus breach tools —
+              the same ones exposed over MCP, so any agent can call them.</p>
+              <p class="step-tech">Anthropic API · <code>claude-opus-4-8</code> · MCP tools</p>
+            </article>
+            <article class="step" data-step="6">
+              <span class="step-no">06</span><h4>It looks up official guidance.</h4>
               <p>Instead of guessing, Claude searches — but only the official shelf: the FTC, CISA, the
               credit bureaus, and other authorities. It writes its own queries.</p>
               <p class="step-tech">Native <code>web_search</code> · allow-listed domains · up to 5 searches</p>
             </article>
-            <article class="step" data-step="5">
-              <span class="step-no">05</span><h4>It assesses urgency.</h4>
-              <p>Real guidance comes back. Claude sorts what to do now from what can wait, and tracks
-              which official source backs each step.</p>
-              <p class="step-tech">Official results · each becomes a numbered citation</p>
-            </article>
-            <article class="step" data-step="6">
-              <span class="step-no">06</span><h4>Your plan streams back.</h4>
-              <p>Every step flows back the moment it's written — Claude → Worker → your browser —
-              prioritized into <em>do now</em>, <em>do soon</em>, and <em>keep doing</em>.</p>
-              <p class="step-tech">Server-Sent Events (SSE) · step-by-step</p>
-            </article>
             <article class="step" data-step="7">
-              <span class="step-no">07</span><h4>You act on it.</h4>
-              <p>You watch the pipeline light up and a clear checklist assemble itself — each step
-              footnoted to the official source you can verify and follow.</p>
-              <p class="step-tech">Rendered safely · model output escaped, then formatted</p>
+              <span class="step-no">07</span><h4>Your plan streams back.</h4>
+              <p>Every step flows back the moment it's written, over Server-Sent Events — Claude → the
+              edge → your browser — prioritized into <em>do now</em>, <em>do soon</em>, <em>keep doing</em>.</p>
+              <p class="step-tech">Server-Sent Events (SSE) · token-by-token</p>
             </article>
             <article class="step" data-step="8">
               <span class="step-no">08</span><h4>It's saved for next time.</h4>
-              <p>Your finished plan and its sources drop into the folder, so you can reopen any past
-              plan from your history and keep working through it.</p>
-              <p class="step-tech">Cloudflare D1 · <code>runs</code> + <code>sources</code> tables</p>
+              <p>Your finished plan and its sources are written down so you can reopen any past plan
+              and keep working. The live edition uses Cloudflare D1; production uses PostgreSQL.</p>
+              <p class="step-tech">Cloudflare D1 · or PostgreSQL — <code>runs</code> + <code>sources</code></p>
+            </article>
+            <article class="step" data-step="9">
+              <span class="step-no">09</span><h4>It's packaged to run anywhere.</h4>
+              <p>The API and the agent workers ship as container images — multi-stage, non-root, minimal
+              base — so what runs in production is exactly what was tested.</p>
+              <p class="step-tech">Docker · OCI images · non-root</p>
+            </article>
+            <article class="step" data-step="10">
+              <span class="step-no">10</span><h4>It scales itself.</h4>
+              <p>Those containers run on Kubernetes. When the queue backs up, KEDA adds worker pods;
+              when it's quiet, it scales them back toward zero.</p>
+              <p class="step-tech">Kubernetes (EKS) · KEDA queue autoscaling</p>
+            </article>
+            <article class="step" data-step="11">
+              <span class="step-no">11</span><h4>It all runs on AWS.</h4>
+              <p>The cluster and everything it talks to — managed Postgres, Redis, object storage, the
+              image registry — live on AWS, owned end to end.</p>
+              <p class="step-tech">AWS · EKS · RDS · ElastiCache · S3 · ECR</p>
+            </article>
+            <article class="step" data-step="12">
+              <span class="step-no">12</span><h4>The cloud is built from code.</h4>
+              <p>None of it is clicked together by hand. Terraform defines every network, cluster, and
+              database as code, reproducibly, one stack per environment.</p>
+              <p class="step-tech">Terraform · infrastructure as code · remote state</p>
+            </article>
+            <article class="step" data-step="13">
+              <span class="step-no">13</span><h4>It's tested, then shipped.</h4>
+              <p>On every push, the full test suite runs — pytest, Vitest, testcontainers — then GitHub
+              Actions builds the image and deploys, authenticating to AWS over OIDC with no stored keys.</p>
+              <p class="step-tech">Testing · GitHub Actions · CI/CD via OIDC</p>
+            </article>
+            <article class="step" data-step="14">
+              <span class="step-no">14</span><h4>And watched in production.</h4>
+              <p>Once live, every run is traced and measured — so latency, errors, and token cost are
+              visible, not guessed. OpenTelemetry exports it all to your dashboards.</p>
+              <p class="step-tech">OpenTelemetry · GenAI semconv · Prometheus</p>
             </article>
           </div>
         </div>
-      </section>
-
-      <!-- PRODUCTION STACK (the full required toolkit, as first-class parts) -->
-      <section class="ex-cast ex-prod">
-        <div class="ex-head">
-          <p class="ex-eyebrow">Under the hood</p>
-          <h3>The production edition adds eight more</h3>
-          <p class="ex-sub" style="margin: 10px 0 0">
-            The live demo runs on Cloudflare. The full production edition runs the same idea on a
-            real cloud — and that's where the rest of the stack lives.
-          </p>
-        </div>
-        <div class="cast-grid prod-grid">
-          <article class="cast-card" style="--i: 0">
-            <div class="cc-ico">🐍</div><h4>Python · FastAPI</h4>
-            <p class="analogy">The kitchen that takes every order.</p>
-            <p class="tech">The async backend service — built from scratch, fully tested.</p>
-          </article>
-          <article class="cast-card" style="--i: 1">
-            <div class="cc-ico">🤖</div><h4>LangGraph agents</h4>
-            <p class="analogy">A team of specialists, each with one job.</p>
-            <p class="tech">Multi-agent graph: plan → search → verify → write, driven by Claude.</p>
-          </article>
-          <article class="cast-card" style="--i: 2">
-            <div class="cc-ico">🐘</div><h4>PostgreSQL</h4>
-            <p class="analogy">The system of record.</p>
-            <p class="tech">Stores users, runs, sources, and reports — the production database.</p>
-          </article>
-          <article class="cast-card" style="--i: 3">
-            <div class="cc-ico">⚡</div><h4>Redis + arq workers</h4>
-            <p class="analogy">The ticket rail and the line cooks.</p>
-            <p class="tech">Queues each breach-response job; workers run it and stream progress back.</p>
-          </article>
-          <article class="cast-card" style="--i: 4">
-            <div class="cc-ico">☸️</div><h4>Kubernetes (EKS)</h4>
-            <p class="analogy">A building that adds rooms on demand.</p>
-            <p class="tech">Runs the API and workers; KEDA autoscales them on the queue.</p>
-          </article>
-          <article class="cast-card" style="--i: 5">
-            <div class="cc-ico">☁️</div><h4>AWS</h4>
-            <p class="analogy">The land the building sits on.</p>
-            <p class="tech">EKS, RDS Postgres, ElastiCache, S3, ECR — owned end to end.</p>
-          </article>
-          <article class="cast-card" style="--i: 6">
-            <div class="cc-ico">🌍</div><h4>Terraform</h4>
-            <p class="analogy">The blueprint that builds the land.</p>
-            <p class="tech">The entire cloud defined as code, per environment.</p>
-          </article>
-          <article class="cast-card" style="--i: 7">
-            <div class="cc-ico">🚀</div><h4>GitHub Actions</h4>
-            <p class="analogy">The crew that tests and ships.</p>
-            <p class="tech">CI/CD — lint, type-check, test, scan, build, and deploy on every change.</p>
-          </article>
-        </div>
-      </section>
-
-      <!-- BLUEPRINT -->
-      <section class="ex-blueprint">
-        <div class="ex-head center">
-          <p class="ex-eyebrow">The whole picture</p>
-          <h3>The architecture, at a glance</h3>
-          <p class="ex-sub">The same system, zoomed out. Flip between what's running today and the
-          full production-grade design.</p>
-        </div>
-
-        <div class="bp-toggle" role="tablist" aria-label="Architecture view">
-          <button role="tab" id="bp-live" class="active" aria-selected="true">⚡ Live on Cloudflare</button>
-          <button role="tab" id="bp-prod" aria-selected="false">🏛️ Production blueprint</button>
-        </div>
-
-        <div class="bp-stage" id="bpStage" data-view="live">
-          <div class="bp-view bp-view-live">
-            <div class="bp-lane">
-              <span class="bp-lane-label">Your device</span>
-              <div class="bp-box">🧭 Browser (SPA)</div>
-            </div>
-            <div class="bp-arrow">HTTPS · SSE</div>
-            <div class="bp-lane">
-              <span class="bp-lane-label">Cloudflare edge</span>
-              <div class="bp-box accent">🛰️ Worker — API + static site</div>
-              <div class="bp-box">🗄️ D1 — SQLite (runs, sources)</div>
-            </div>
-            <div class="bp-arrow">HTTPS</div>
-            <div class="bp-lane">
-              <span class="bp-lane-label">Anthropic</span>
-              <div class="bp-box">🧠 Claude Opus 4.8</div>
-              <div class="bp-box">🔎 web_search → official guidance</div>
-            </div>
-          </div>
-
-          <div class="bp-view bp-view-prod" hidden>
-            <div class="bp-lane">
-              <span class="bp-lane-label">Edge — Cloudflare</span>
-              <div class="bp-box">🧭 React SPA</div>
-              <div class="bp-box">🛡️ Edge auth · rate-limit · WAF</div>
-            </div>
-            <div class="bp-arrow">HTTPS · SSE</div>
-            <div class="bp-lane wide">
-              <span class="bp-lane-label">AWS — Kubernetes (EKS)</span>
-              <div class="bp-row">
-                <div class="bp-box accent">⚙️ FastAPI (API pods)</div>
-                <div class="bp-box accent">🤖 Agent workers (LangGraph)</div>
-              </div>
-              <div class="bp-row">
-                <div class="bp-box">🐘 PostgreSQL (RDS)</div>
-                <div class="bp-box">⚡ Redis / arq queue</div>
-                <div class="bp-box">📦 S3 · exports</div>
-              </div>
-              <div class="bp-row">
-                <div class="bp-box">🧠 Claude + Tavily</div>
-                <div class="bp-box">📈 OTel · Prometheus</div>
-              </div>
-            </div>
-            <div class="bp-arrow">provisions / ships</div>
-            <div class="bp-lane">
-              <span class="bp-lane-label">Platform</span>
-              <div class="bp-box">🌍 Terraform (IaC)</div>
-              <div class="bp-box">🚀 GitHub Actions (CI/CD)</div>
-            </div>
-          </div>
-        </div>
-        <p class="bp-note" id="bpNote">
-          Running today: a single Cloudflare Worker, Claude Opus 4.8 searching official guidance, and
-          a D1 database. No servers to manage.
-        </p>
       </section>
 
       <!-- STACK -->
@@ -420,19 +381,27 @@
         <div class="ex-head center">
           <p class="ex-eyebrow">Under the hood</p>
           <h3>The full toolkit</h3>
-          <p class="ex-sub">Every technology the system is built on — and what each one is for.</p>
+          <p class="ex-sub">Every moving part the system is built on — what it is, and the specifics behind it.</p>
         </div>
         <div class="tech-grid">
-          <article class="tech-card" tabindex="0"><h5>Python · FastAPI</h5><p>The backend service, built from scratch — async, layered, typed.</p></article>
-          <article class="tech-card" tabindex="0"><h5>PostgreSQL</h5><p>The production database — SQLAlchemy 2.0, Alembic, real schema.</p></article>
-          <article class="tech-card" tabindex="0"><h5>Agentic AI · LangGraph</h5><p>A multi-agent graph (plan → search → verify → write) driven by Claude.</p></article>
-          <article class="tech-card" tabindex="0"><h5>Claude Opus 4.8</h5><p>The reasoning model — deployed live with web search.</p></article>
-          <article class="tech-card" tabindex="0"><h5>Terraform</h5><p>The whole cloud as code — VPC, EKS, RDS, ECR, IAM, per-env state.</p></article>
-          <article class="tech-card" tabindex="0"><h5>Kubernetes</h5><p>A Helm chart — API + agent workers, KEDA autoscaling, hardened pods.</p></article>
-          <article class="tech-card" tabindex="0"><h5>AWS</h5><p>Owned end to end — EKS, RDS Postgres, ElastiCache, S3, ECR, Secrets.</p></article>
-          <article class="tech-card" tabindex="0"><h5>GitHub Actions</h5><p>CI/CD — lint, type-check, test, scan, build, and deploy via OIDC.</p></article>
-          <article class="tech-card" tabindex="0"><h5>Cloudflare Workers</h5><p>Runs the live edition at the edge, close to every user.</p></article>
-          <article class="tech-card" tabindex="0"><h5>Cloudflare D1</h5><p>SQLite at the edge — every live run is saved here.</p></article>
+          <a class="tech-card" href="https://fastapi.tiangolo.com/" target="_blank" rel="noopener"><span class="tc-cat">Backend</span><h5>Python · FastAPI</h5><p>The async backend service — layered, fully typed, built from scratch.</p><span class="tc-meta">Pydantic v2 · async SQLAlchemy 2.0 · OpenAPI</span></a>
+          <a class="tech-card" href="https://www.postgresql.org/" target="_blank" rel="noopener"><span class="tc-cat">Data</span><h5>PostgreSQL</h5><p>The production system of record.</p><span class="tc-meta">SQLAlchemy 2.0 · Alembic migrations · tested on real PG</span></a>
+          <a class="tech-card" href="https://langchain-ai.github.io/langgraph/" target="_blank" rel="noopener"><span class="tc-cat">Agents</span><h5>Agentic AI · LangGraph</h5><p>A multi-agent graph: plan → search → verify → write.</p><span class="tc-meta">parallel fan-out · entailment verify · Claude-driven</span></a>
+          <a class="tech-card" href="https://www.anthropic.com/claude" target="_blank" rel="noopener"><span class="tc-cat">AI model</span><h5>Claude Opus 4.8</h5><p>The reasoning model — deployed live with web search.</p><span class="tc-meta">Anthropic API · web_search · allow-listed domains</span></a>
+          <a class="tech-card" href="https://redis.io/" target="_blank" rel="noopener"><span class="tc-cat">Queue</span><h5>Redis + arq</h5><p>Durable background jobs so the API never blocks on a long run.</p><span class="tc-meta">arq workers · retries + backoff · ElastiCache</span></a>
+          <a class="tech-card" href="https://developer.mozilla.org/en-US/docs/Web/API/Server-sent_events" target="_blank" rel="noopener"><span class="tc-cat">Streaming</span><h5>Server-Sent Events</h5><p>Each step pushed to the browser the moment it's written.</p><span class="tc-meta">Redis Streams → SSE · token-by-token</span></a>
+          <a class="tech-card" href="https://modelcontextprotocol.io/" target="_blank" rel="noopener"><span class="tc-cat">Interop</span><h5>MCP server</h5><p>Breach tools exposed over the Model Context Protocol.</p><span class="tc-meta">FastMCP · 5 tools · stdio · any MCP client</span></a>
+          <a class="tech-card" href="https://react.dev/" target="_blank" rel="noopener"><span class="tc-cat">Frontend</span><h5>React · Vite</h5><p>The production single-page app.</p><span class="tc-meta">React 19 · Vite · typed components · Vitest</span></a>
+          <a class="tech-card" href="https://www.terraform.io/" target="_blank" rel="noopener"><span class="tc-cat">Infra</span><h5>Terraform</h5><p>The whole cloud as code, per environment.</p><span class="tc-meta">VPC · EKS · RDS · ECR · IAM · remote state</span></a>
+          <a class="tech-card" href="https://kubernetes.io/" target="_blank" rel="noopener"><span class="tc-cat">Platform</span><h5>Kubernetes</h5><p>A Helm chart running the API and agent workers.</p><span class="tc-meta">KEDA queue autoscaling · hardened, non-root pods</span></a>
+          <a class="tech-card" href="https://www.docker.com/" target="_blank" rel="noopener"><span class="tc-cat">Containers</span><h5>Docker · OCI</h5><p>Reproducible images for the API and workers.</p><span class="tc-meta">multi-stage · non-root · minimal base</span></a>
+          <a class="tech-card" href="https://aws.amazon.com/" target="_blank" rel="noopener"><span class="tc-cat">Cloud</span><h5>AWS</h5><p>Owned end to end.</p><span class="tc-meta">EKS · RDS · ElastiCache · S3 · ECR · Secrets Manager</span></a>
+          <a class="tech-card" href="https://github.com/features/actions" target="_blank" rel="noopener"><span class="tc-cat">Delivery</span><h5>GitHub Actions</h5><p>CI/CD on every push.</p><span class="tc-meta">lint · type-check · test · scan · build · deploy (OIDC)</span></a>
+          <a class="tech-card" href="https://docs.pytest.org/" target="_blank" rel="noopener"><span class="tc-cat">Quality</span><h5>Testing</h5><p>Proven, not promised.</p><span class="tc-meta">pytest · Vitest · testcontainers (Postgres + Redis)</span></a>
+          <a class="tech-card" href="https://opentelemetry.io/" target="_blank" rel="noopener"><span class="tc-cat">Observability</span><h5>OpenTelemetry</h5><p>You can see what the system is doing.</p><span class="tc-meta">GenAI semconv · traces + metrics · Prometheus</span></a>
+          <a class="tech-card" href="https://www.cloudflare.com/application-services/products/turnstile/" target="_blank" rel="noopener"><span class="tc-cat">Security</span><h5>Edge defenses</h5><p>Layered protection at the front door.</p><span class="tc-meta">Turnstile · rate limits · prompt-injection spotlighting</span></a>
+          <a class="tech-card" href="https://workers.cloudflare.com/" target="_blank" rel="noopener"><span class="tc-cat">Edge</span><h5>Cloudflare Workers</h5><p>Runs the live edition at the edge, close to every user.</p><span class="tc-meta">300+ cities · static assets + API in one</span></a>
+          <a class="tech-card" href="https://developers.cloudflare.com/d1/" target="_blank" rel="noopener"><span class="tc-cat">Edge data</span><h5>Cloudflare D1</h5><p>SQLite at the edge — every live run is saved.</p><span class="tc-meta">runs + sources tables · per-IP rate limits</span></a>
         </div>
       </section>
 
@@ -455,6 +424,115 @@
         </div>
       </section>
 
+      <!-- STANDARDS & BEST PRACTICES -->
+      <section class="ex-std">
+        <div class="ex-head center">
+          <p class="ex-eyebrow">Rigor, not vibes</p>
+          <h3>Built to standard</h3>
+          <p class="ex-sub">
+            The principles this system is designed and implemented against — and the published
+            standards behind them, each linked so you can check the source yourself.
+          </p>
+        </div>
+
+        <div class="std-block">
+          <h4 class="std-h">Best practices — design &amp; implementation</h4>
+          <div class="bp-cols">
+            <div class="bp-col">
+              <span class="bp-col-label">Engineering</span>
+              <ul class="bp-list">
+                <li>Test-driven development — deterministic agent tests with fake models</li>
+                <li>Strict static typing — <code>mypy --strict</code>, TypeScript, Pydantic</li>
+                <li>Infrastructure as Code — every environment reproducible from Terraform</li>
+                <li>CI/CD with SAST + SCA — CodeQL, lint, type-check, dependency scans per push</li>
+                <li>Keyless cloud auth — GitHub OIDC, no long-lived secrets</li>
+                <li>Twelve-factor config — config from env, stateless processes</li>
+                <li>Idempotency, retries with backoff, per-run cost guardrails</li>
+              </ul>
+            </div>
+            <div class="bp-col">
+              <span class="bp-col-label">Security &amp; AI safety</span>
+              <ul class="bp-list">
+                <li>Defense in depth — edge rate limiting, Turnstile, allow-listed search domains</li>
+                <li>Least privilege — scoped IAM, non-root, read-only container filesystems</li>
+                <li>Prompt-injection spotlighting — untrusted sources fenced, never obeyed</li>
+                <li>Grounded generation — entailment-verified, cite-or-don't-claim</li>
+                <li>Data minimization — k-anonymity password check, no sensitive PII retained</li>
+                <li>Secrets management — Wrangler secrets / AWS Secrets Manager</li>
+                <li>Graceful degradation — falls back to known official guidance on tool limits</li>
+              </ul>
+            </div>
+            <div class="bp-col">
+              <span class="bp-col-label">Design &amp; frontend</span>
+              <ul class="bp-list">
+                <li>Accessibility — semantic HTML, visible focus, <code>prefers-reduced-motion</code> honored</li>
+                <li>Progressive enhancement — content streams in via SSE, usable as it loads</li>
+                <li>Design tokens + a single type scale — one consistent visual language</li>
+                <li>Responsive — fluid down to small screens</li>
+                <li>XSS-safe rendering — model output escaped before markdown</li>
+                <li>Fingerprinted assets — versioned URLs so updates never serve stale</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <div class="std-block">
+          <h4 class="std-h">Standards &amp; specifications — with references</h4>
+
+          <div class="std-group">
+            <span class="std-group-label">Security &amp; identity</span>
+            <div class="std-grid">
+              <a class="std-card" href="https://pages.nist.gov/800-63-3/sp800-63b.html" target="_blank" rel="noopener"><b>NIST SP 800-63B</b><i>Digital-identity, password &amp; MFA guidance our advice follows</i></a>
+              <a class="std-card" href="https://csrc.nist.gov/pubs/sp/800/61/r2/final" target="_blank" rel="noopener"><b>NIST SP 800-61 r2</b><i>Computer-security incident handling — prepare, respond, recover</i></a>
+              <a class="std-card" href="https://www.nist.gov/cyberframework" target="_blank" rel="noopener"><b>NIST CSF 2.0</b><i>Cybersecurity Framework — the risk vocabulary</i></a>
+              <a class="std-card" href="https://owasp.org/www-project-top-ten/" target="_blank" rel="noopener"><b>OWASP Top 10</b><i>The web-app risks we design against</i></a>
+              <a class="std-card" href="https://owasp.org/www-project-application-security-verification-standard/" target="_blank" rel="noopener"><b>OWASP ASVS</b><i>Application Security Verification Standard</i></a>
+              <a class="std-card" href="https://owasp.org/www-project-top-10-for-large-language-model-applications/" target="_blank" rel="noopener"><b>OWASP LLM Top 10</b><i>Prompt injection &amp; other model-app risks</i></a>
+              <a class="std-card" href="https://www.cisecurity.org/benchmark/kubernetes" target="_blank" rel="noopener"><b>CIS Kubernetes Benchmark</b><i>Cluster hardening baseline</i></a>
+              <a class="std-card" href="https://slsa.dev/" target="_blank" rel="noopener"><b>SLSA</b><i>Supply-chain integrity levels for the build</i></a>
+            </div>
+          </div>
+
+          <div class="std-group">
+            <span class="std-group-label">Web &amp; API</span>
+            <div class="std-grid">
+              <a class="std-card" href="https://www.rfc-editor.org/rfc/rfc9110" target="_blank" rel="noopener"><b>RFC 9110</b><i>HTTP Semantics</i></a>
+              <a class="std-card" href="https://www.rfc-editor.org/rfc/rfc7519" target="_blank" rel="noopener"><b>RFC 7519</b><i>JSON Web Token (JWT)</i></a>
+              <a class="std-card" href="https://www.rfc-editor.org/rfc/rfc8725" target="_blank" rel="noopener"><b>RFC 8725</b><i>JWT Best Current Practices</i></a>
+              <a class="std-card" href="https://www.rfc-editor.org/rfc/rfc6749" target="_blank" rel="noopener"><b>RFC 6749</b><i>OAuth 2.0 Authorization Framework</i></a>
+              <a class="std-card" href="https://html.spec.whatwg.org/multipage/server-sent-events.html" target="_blank" rel="noopener"><b>WHATWG HTML — SSE</b><i>Server-Sent Events, the streaming transport</i></a>
+              <a class="std-card" href="https://spec.openapis.org/oas/latest.html" target="_blank" rel="noopener"><b>OpenAPI Specification</b><i>The API contract format</i></a>
+              <a class="std-card" href="https://www.w3.org/TR/WCAG22/" target="_blank" rel="noopener"><b>WCAG 2.2</b><i>Web Content Accessibility Guidelines</i></a>
+              <a class="std-card" href="https://modelcontextprotocol.io/" target="_blank" rel="noopener"><b>Model Context Protocol</b><i>How the breach tools are exposed to agents</i></a>
+            </div>
+          </div>
+
+          <div class="std-group">
+            <span class="std-group-label">Cloud, delivery &amp; process</span>
+            <div class="std-grid">
+              <a class="std-card" href="https://aws.amazon.com/architecture/well-architected/" target="_blank" rel="noopener"><b>AWS Well-Architected</b><i>The six-pillar design framework</i></a>
+              <a class="std-card" href="https://12factor.net/" target="_blank" rel="noopener"><b>The Twelve-Factor App</b><i>Config, statelessness, disposability</i></a>
+              <a class="std-card" href="https://kubernetes.io/docs/concepts/security/pod-security-standards/" target="_blank" rel="noopener"><b>K8s Pod Security Standards</b><i>Restricted-profile workloads</i></a>
+              <a class="std-card" href="https://opentelemetry.io/" target="_blank" rel="noopener"><b>OpenTelemetry</b><i>Traces, metrics &amp; logs — vendor-neutral</i></a>
+              <a class="std-card" href="https://docs.github.com/en/actions/deployment/security-hardening-your-deployments/about-security-hardening-with-openid-connect" target="_blank" rel="noopener"><b>GitHub OIDC Hardening</b><i>Keyless deploys to AWS</i></a>
+              <a class="std-card" href="https://semver.org/" target="_blank" rel="noopener"><b>Semantic Versioning 2.0</b><i>Predictable release numbers</i></a>
+              <a class="std-card" href="https://www.conventionalcommits.org/" target="_blank" rel="noopener"><b>Conventional Commits</b><i>Machine-readable history</i></a>
+              <a class="std-card" href="https://c4model.com/" target="_blank" rel="noopener"><b>C4 model</b><i>How the architecture is diagrammed</i></a>
+            </div>
+          </div>
+
+          <div class="std-group">
+            <span class="std-group-label">Breach-response authorities the product cites</span>
+            <div class="std-grid">
+              <a class="std-card" href="https://www.ftc.gov/business-guidance/resources/data-breach-response-guide-business" target="_blank" rel="noopener"><b>FTC — Data Breach Response</b><i>The federal playbook for breaches</i></a>
+              <a class="std-card" href="https://www.identitytheft.gov/" target="_blank" rel="noopener"><b>IdentityTheft.gov</b><i>FTC step-by-step recovery plans</i></a>
+              <a class="std-card" href="https://www.cisa.gov/" target="_blank" rel="noopener"><b>CISA</b><i>Federal cyber-defense guidance (MFA, phishing)</i></a>
+              <a class="std-card" href="https://haveibeenpwned.com/API/v3#PwnedPasswords" target="_blank" rel="noopener"><b>HIBP — Pwned Passwords</b><i>k-anonymity password check, no password sent</i></a>
+            </div>
+          </div>
+        </div>
+      </section>
+
       <section class="ex-closing">
         <h3>Now put it to work.</h3>
         <p>You've seen the moving parts. Tell Firstline what happened and get your plan.</p>
@@ -466,7 +544,7 @@
       <span>Firstline · breach-response copilot on Cloudflare Workers + D1 · Claude Opus 4.8 with official-guidance search</span>
     </footer>
 
-    <script type="module" src="/app.js"></script>
-    <script src="/architecture.js"></script>
+    <script type="module" src="/app.js?v=13"></script>
+    <script src="/architecture.js?v=13"></script>
   </body>
 </html>

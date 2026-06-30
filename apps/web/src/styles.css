@@ -49,7 +49,7 @@ html, body { margin: 0; background: var(--bg); color: var(--ink); font-family: "
 
 .stage { display: grid; grid-template-columns: 320px 1fr; gap: 24px; align-items: start; }
 .panel-title { font-size: 12px; text-transform: uppercase; letter-spacing: .16em; color: var(--faint); margin: 0 0 14px; font-weight: 600; }
-.pipeline { background: var(--paper); border: 1px solid var(--line); border-radius: 14px; padding: 20px; box-shadow: 0 1px 2px rgba(29,26,20,.04); }
+.pipeline { background: var(--paper); border: 1px solid var(--line); border-radius: 14px; padding: 20px; box-shadow: 0 1px 2px rgba(29,26,20,.04); max-height: calc(100vh - 48px); overflow-y: auto; }
 .stages { list-style: none; margin: 0 0 8px; padding: 0; }
 .stages li { display: flex; align-items: center; gap: 12px; padding: 9px 0; color: var(--faint); position: relative; }
 .stages li::before { content: ""; position: absolute; left: 6px; top: 26px; bottom: -9px; width: 1px; background: var(--line); }
@@ -64,7 +64,7 @@ html, body { margin: 0; background: var(--bg); color: var(--ink); font-family: "
 .subqs .sq { font-size: 12.5px; color: var(--dim); padding: 8px 10px; background: var(--paper2); border: 1px solid var(--line); border-radius: 9px; line-height: 1.4; }
 .src-title { margin-top: 22px; }
 .count { display: inline-block; min-width: 18px; text-align: center; font-size: 11px; color: var(--gold); border: 1px solid var(--line); border-radius: 999px; padding: 1px 6px; }
-.sources { display: flex; flex-direction: column; gap: 8px; }
+.sources { display: flex; flex-direction: column; gap: 8px; max-height: 46vh; overflow-y: auto; }
 .source { display: block; text-decoration: none; padding: 10px 12px; background: var(--paper2); border: 1px solid var(--line); border-radius: 10px; color: var(--ink); font-size: 13.5px; }
 .source:hover { border-color: var(--gold-soft); }
 .source .idx { color: var(--gold); }
