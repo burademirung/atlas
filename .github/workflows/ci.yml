@@ -167,7 +167,7 @@ jobs:
       # Fails the build on any fixable CRITICAL/HIGH finding in lockfiles
       # (uv.lock, package-lock.json) or other detected manifests.
       - name: Trivy filesystem scan (gate)
-        uses: aquasecurity/trivy-action@915b19bbe73b92a6cf82a1bc12b087c9a19a5fe2 # v0.28.0
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
           scan-type: fs
           scanners: vuln,secret
@@ -179,7 +179,7 @@ jobs:
       # ---- Gate 2: IaC / config misconfiguration --------------------------
       # Scans Dockerfiles, Helm, Terraform, Kubernetes manifests.
       - name: Trivy config (IaC) scan (gate)
-        uses: aquasecurity/trivy-action@915b19bbe73b92a6cf82a1bc12b087c9a19a5fe2 # v0.28.0
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
           scan-type: config
           severity: CRITICAL,HIGH
@@ -189,7 +189,7 @@ jobs:
       # ---- Visibility: upload SARIF (non-blocking) ------------------------
       - name: Trivy filesystem scan (SARIF)
         if: ${{ !cancelled() }}
-        uses: aquasecurity/trivy-action@915b19bbe73b92a6cf82a1bc12b087c9a19a5fe2 # v0.28.0
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
           scan-type: fs
           scanners: vuln,secret,misconfig
