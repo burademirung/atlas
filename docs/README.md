@@ -34,7 +34,7 @@ Get the system running and see the request → stream → cited-report loop end 
 | [Data model](data-model.md) | The PostgreSQL 7-table schema and the Cloudflare D1 schema |
 | [`STACK.md`](../STACK.md) | Where each required technology lives, with evidence |
 | [`AGENTS.md`](../AGENTS.md) | Commands, conventions, and guardrails for AI coding agents |
-| [`.github/README.md`](../.github/README.md) | The CI/CD pipeline (workflows, environments, OIDC setup) |
+| [`.github/WORKFLOWS.md`](../.github/WORKFLOWS.md) | The CI/CD pipeline (workflows, environments, OIDC setup) |
 | [`infra/terraform/README.md`](../infra/terraform/README.md) | Terraform module map and dev-vs-prod table |
 | [`infra/k8s/atlas/README.md`](../infra/k8s/atlas/README.md) | The Helm chart, prerequisites, and key values |
 | [`apps/api/README.md`](../apps/api/README.md) | Backend dev quickstart |

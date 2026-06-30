@@ -116,7 +116,7 @@ Use **expand-contract / backward-compatible** migrations only.
 ## CI/CD workflow reference
 
 All workflows apply least privilege (top-level `permissions: {}`), pin third-party actions to a
-full commit SHA, and use OIDC for AWS. Full reference: [`.github/README.md`](../.github/README.md).
+full commit SHA, and use OIDC for AWS. Full reference: [`.github/WORKFLOWS.md`](../.github/WORKFLOWS.md).
 
 | Workflow | Trigger | Does |
 |---|---|---|
@@ -129,5 +129,5 @@ full commit SHA, and use OIDC for AWS. Full reference: [`.github/README.md`](../
 
 Required GitHub Environments: `production` (deploy), `cloudflare-production` (Worker), `infra-plan`
 (Terraform plan) — all with required reviewers. The one-time OIDC/IAM setup is documented in
-[`.github/README.md`](../.github/README.md#oidc--aws-iam-setup-one-time).
+[`.github/WORKFLOWS.md`](../.github/WORKFLOWS.md#oidc--aws-iam-setup-one-time).
 </content>
