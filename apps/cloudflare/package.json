@@ -6,11 +6,13 @@
     "dev": "wrangler dev --remote",
     "deploy": "wrangler deploy",
     "typecheck": "tsc --noEmit",
+    "test": "vitest",
     "db:migrate": "wrangler d1 migrations apply atlas-research --remote"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20250601.0",
     "typescript": "^5.6.0",
+    "vitest": "^3.2.0",
     "wrangler": "^4.0.0"
   }
 }

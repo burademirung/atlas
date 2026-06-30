@@ -1,4 +1,4 @@
-"use strict";
+import { escapeHtml, renderMarkdown } from "./render.js";
 
 const $ = (sel) => document.querySelector(sel);
 const stagesEl = $("#stages");
@@ -15,56 +15,54 @@ const qInput = $("#q");
 let reportBuffer = "";
 let running = false;
 
-/* ---------- safe, minimal markdown rendering (output is escaped first) ----- */
-function escapeHtml(s) {
-  return s
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;");
+/* ---------- Turnstile (bot protection, optional) -------------------------- */
+let turnstileSitekey = null;
+let turnstileWidgetId = null;
+
+async function initTurnstile() {
+  try {
+    const r = await fetch("/api/config");
+    const cfg = await r.json();
+    if (!cfg || !cfg.sitekey) return;
+    turnstileSitekey = cfg.sitekey;
+
+    const el = $("#turnstile");
+    if (el) el.hidden = false;
+
+    window.onTurnstileLoad = () => {
+      if (!window.turnstile || !el) return;
+      turnstileWidgetId = window.turnstile.render(el, { sitekey: turnstileSitekey });
+    };
+
+    const script = document.createElement("script");
+    script.src =
+      "https://challenges.cloudflare.com/turnstile/v0/api.js?onload=onTurnstileLoad&render=explicit";
+    script.async = true;
+    script.defer = true;
+    document.head.appendChild(script);
+  } catch {
+    /* config unavailable — proceed without Turnstile */
+  }
 }
 
-function renderMarkdown(md) {
-  let html = escapeHtml(md);
-  const lines = html.split("\n");
-  const out = [];
-  let inList = false;
-  const closeList = () => {
-    if (inList) {
-      out.push("</ul>");
-      inList = false;
-    }
-  };
-  for (const raw of lines) {
-    const line = raw.trimEnd();
-    let m;
-    if ((m = line.match(/^(#{1,3})\s+(.*)$/))) {
-      closeList();
-      const level = m[1].length;
-      out.push(`<h${level}>${inline(m[2])}</h${level}>`);
-    } else if ((m = line.match(/^\s*[-*]\s+(.*)$/))) {
-      if (!inList) {
-        out.push("<ul>");
-        inList = true;
-      }
-      out.push(`<li>${inline(m[1])}</li>`);
-    } else if (line.trim() === "") {
-      closeList();
-    } else {
-      closeList();
-      out.push(`<p>${inline(line)}</p>`);
+function getTurnstileToken() {
+  if (!turnstileSitekey || !window.turnstile || turnstileWidgetId === null) return "";
+  return window.turnstile.getResponse(turnstileWidgetId) || "";
+}
+
+function resetTurnstile() {
+  if (turnstileSitekey && window.turnstile && turnstileWidgetId !== null) {
+    try {
+      window.turnstile.reset(turnstileWidgetId);
+    } catch {
+      /* ignore */
     }
   }
-  closeList();
-  return out.join("\n");
 }
 
-function inline(s) {
-  // bold then citations [n] -> superscript link
-  return s
-    .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>")
-    .replace(/\[(\d+)\]/g, '<a class="cite" href="#source-$1">[$1]</a>');
-}
+/* ---------- safe, minimal markdown rendering -------------------------------
+ * escapeHtml / renderMarkdown (and the internal inline()) live in render.js,
+ * an ES module imported at the top of this file, so they can be unit-tested. */
 
 /* ---------- pipeline + status UI ------------------------------------------ */
 const ORDER = ["planning", "searching", "verifying", "writing"];
@@ -129,7 +127,7 @@ async function runResearch(question) {
     const resp = await fetch("/api/research", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ question }),
+      body: JSON.stringify({ question, turnstileToken: getTurnstileToken() }),
     });
     if (!resp.ok || !resp.body) throw new Error("Request failed (" + resp.status + ")");
 
@@ -150,6 +148,7 @@ async function runResearch(question) {
   } finally {
     running = false;
     runBtn.disabled = false;
+    resetTurnstile();
     loadHistory();
   }
 }
@@ -254,3 +253,4 @@ for (const btn of document.querySelectorAll("#examples button")) {
   });
 }
 loadHistory();
+initTurnstile();

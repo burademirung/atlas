@@ -57,8 +57,8 @@ jobs:
             dockerfile: apps/api/Dockerfile
             repository: atlas/worker
           - name: web
-            context: apps/cloudflare
-            dockerfile: apps/cloudflare/Dockerfile
+            context: apps/web
+            dockerfile: apps/web/Dockerfile
             repository: atlas/web
     outputs:
       api_digest: ${{ steps.collect.outputs.api_digest }}

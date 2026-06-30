@@ -55,6 +55,25 @@ export function getRun(token: string, id: number): Promise<RunDetail> {
   return json(`/v1/runs/${id}`, { method: "GET" }, token);
 }
 
+/** Parse a single SSE frame (the text between two blank lines) into a RunEvent.
+ *  Returns null for frames with no `data:` payload (e.g. keepalive comments) or
+ *  when the data isn't valid JSON. Pure & exported so it can be unit-tested. */
+export function parseSseFrame(frame: string): RunEvent | null {
+  let event = "message";
+  let data = "";
+  for (const line of frame.split("\n")) {
+    if (line.startsWith("event:")) event = line.slice(6).trim();
+    else if (line.startsWith("data:")) data += line.slice(5).trim();
+  }
+  if (!data) return null;
+  try {
+    return { event, data: JSON.parse(data) as Record<string, unknown> };
+  } catch {
+    /* ignore keepalives / partial frames */
+    return null;
+  }
+}
+
 /** Stream a run's Server-Sent Events. EventSource can't send an auth header,
  *  so we parse the SSE body from a fetch stream ourselves. */
 export async function streamRun(
@@ -78,18 +97,8 @@ export async function streamRun(
     const frames = buffer.split("\n\n");
     buffer = frames.pop() ?? "";
     for (const frame of frames) {
-      let event = "message";
-      let data = "";
-      for (const line of frame.split("\n")) {
-        if (line.startsWith("event:")) event = line.slice(6).trim();
-        else if (line.startsWith("data:")) data += line.slice(5).trim();
-      }
-      if (!data) continue;
-      try {
-        onEvent({ event, data: JSON.parse(data) as Record<string, unknown> });
-      } catch {
-        /* ignore keepalives / partial frames */
-      }
+      const e = parseSseFrame(frame);
+      if (e) onEvent(e);
     }
   }
 }

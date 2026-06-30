@@ -4,8 +4,9 @@ from atlas_api.agents import StubSearchProvider
 from atlas_api.config import Settings
 from atlas_api.evals.harness import run_eval, summarize
 
-# fake responses cycle: plan, report, plan, report, ... (2 model calls per question)
+# fake responses cycle: plan, verify, report, ... (3 model calls per question)
 PLAN = "Sub-question one?\nSub-question two?"
+VERIFY = "Relevant: 1, 2, 3, 4"
 REPORT = "## Answer\nGrounded finding [1]. Another point [2].\n\n## Sources\n[1] ... [2] ..."
 
 
@@ -21,7 +22,7 @@ def _settings() -> Settings:
 
 async def test_eval_harness_scores_and_enforces_invariants() -> None:
     questions = ["What is X?", "How does Y work?"]
-    fake = FakeListChatModel(responses=[PLAN, REPORT])  # cycles across calls
+    fake = FakeListChatModel(responses=[PLAN, VERIFY, REPORT])  # cycles across calls
     cases = await run_eval(
         questions, model=fake, provider=StubSearchProvider(), settings=_settings()
     )
@@ -37,7 +38,7 @@ async def test_eval_harness_scores_and_enforces_invariants() -> None:
 
 
 async def test_summary_flags_missing_citations() -> None:
-    fake = FakeListChatModel(responses=["Sub-q?", "No citations here."])
+    fake = FakeListChatModel(responses=["Sub-q?", VERIFY, "No citations here."])
     cases = await run_eval(
         ["Q?"], model=fake, provider=StubSearchProvider(), settings=_settings()
     )

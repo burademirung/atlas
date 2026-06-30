@@ -8,6 +8,7 @@ PLAN = (
     "Which have the highest energy density?\n"
     "What are the safety tradeoffs?"
 )
+VERIFY = "Relevant sources: 1, 2, 3, 4, 5, 6"
 REPORT = (
     "## Findings\nSolid-state cells lead on density [1]. Safety remains a tradeoff [2].\n\n"
     "## Sources\n[1] ... [2] ..."
@@ -25,8 +26,8 @@ def _settings() -> Settings:
 
 
 async def test_research_graph_runs_end_to_end() -> None:
-    # plan call returns 3 sub-questions; write call returns the report.
-    fake = FakeListChatModel(responses=[PLAN, REPORT])
+    # plan → verify → write (3 model calls per run).
+    fake = FakeListChatModel(responses=[PLAN, VERIFY, REPORT])
     state = await run_research(
         "What are the newest EV battery chemistries?",
         model=fake,
@@ -48,7 +49,7 @@ async def test_research_graph_runs_end_to_end() -> None:
 
 
 async def test_planner_falls_back_to_question_when_empty() -> None:
-    fake = FakeListChatModel(responses=["", REPORT])
+    fake = FakeListChatModel(responses=["", VERIFY, REPORT])
     state = await run_research(
         "Why is the sky blue?",
         model=fake,

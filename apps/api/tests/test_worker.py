@@ -14,6 +14,7 @@ from atlas_api.runs.repository import RunRepository
 from atlas_api.worker import run_research_job
 
 PLAN = "Newest battery chemistries?\nHighest energy density options?\nSafety tradeoffs?"
+VERIFY = "Relevant: 1, 2, 3, 4, 5, 6"
 REPORT = "## Findings\nSolid-state leads [1].\n\n## Sources\n[1] ..."
 
 
@@ -51,7 +52,7 @@ async def test_worker_runs_graph_persists_and_streams(
         "redis": redis_client,
         "sessionmaker": maker,
         "settings": _settings(redis_url),
-        "model": FakeListChatModel(responses=[PLAN, REPORT]),
+        "model": FakeListChatModel(responses=[PLAN, VERIFY, REPORT]),
         "provider": StubSearchProvider(),
     }
     result = await run_research_job(ctx, run_id)
@@ -94,7 +95,7 @@ async def test_worker_cancellation(
         "redis": redis_client,
         "sessionmaker": maker,
         "settings": _settings(redis_url),
-        "model": FakeListChatModel(responses=[PLAN, REPORT]),
+        "model": FakeListChatModel(responses=[PLAN, VERIFY, REPORT]),
         "provider": StubSearchProvider(),
     }
     result = await run_research_job(ctx, run_id)
