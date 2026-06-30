@@ -26,7 +26,7 @@ async def pwned_password_count(password: str, *, timeout: float = 10.0) -> int: 
     # SHA-1 hashes (k-anonymity — only the first 5 hex chars leave this process).
     # Not password storage/hashing; usedforsecurity=False marks the intent. See
     # https://haveibeenpwned.com/API/v3#PwnedPasswords (CodeQL false positive).
-    sha1 = hashlib.sha1(password.encode(), usedforsecurity=False)  # noqa: S324  # nosec
+    sha1 = hashlib.sha1(password.encode(), usedforsecurity=False)  # noqa: S324  # nosec  # nosemgrep
     digest = sha1.hexdigest().upper()
     prefix, suffix = digest[:5], digest[5:]
     async with httpx.AsyncClient(timeout=timeout) as client:

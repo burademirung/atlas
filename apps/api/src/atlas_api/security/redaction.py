@@ -25,10 +25,10 @@ from __future__ import annotations
 import logging
 import re
 
-SSN_TOKEN = "[redacted-ssn]"  # noqa: S105 - redaction placeholder, not a secret
-CC_TOKEN = "[redacted-cc]"  # noqa: S105 - redaction placeholder, not a secret
-EMAIL_TOKEN = "[redacted-email]"  # noqa: S105 - redaction placeholder, not a secret
-PHONE_TOKEN = "[redacted-phone]"  # noqa: S105 - redaction placeholder, not a secret
+SSN_TOKEN = "[redacted-ssn]"  # noqa: S105  # nosec B105 - redaction placeholder, not a secret
+CC_TOKEN = "[redacted-cc]"  # noqa: S105  # nosec B105 - redaction placeholder, not a secret
+EMAIL_TOKEN = "[redacted-email]"  # noqa: S105  # nosec B105 - redaction placeholder, not a secret
+PHONE_TOKEN = "[redacted-phone]"  # noqa: S105  # nosec B105 - redaction placeholder, not a secret
 
 # Email — handled first so digits inside an address are not re-matched as SSN/CC.
 # ReDoS-safe: '.' is the fixed separator between label runs and is NOT in the
