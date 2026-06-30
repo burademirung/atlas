@@ -36,7 +36,7 @@ dev = [
     "pytest-cov>=6.0",
     "testcontainers[postgres,redis]>=4.13",
     "ruff>=0.13",
-    "mypy>=1.14",
+    "mypy>=2.1.0",
 ]
 
 [build-system]
