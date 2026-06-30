@@ -16,6 +16,7 @@ from atlas_api.errors import install_error_handlers
 from atlas_api.health.router import router as health_router
 from atlas_api.logging import configure_logging
 from atlas_api.middleware import request_id_middleware
+from atlas_api.observability import metrics_endpoint, observe_request, setup_telemetry
 from atlas_api.runs.router import router as runs_router
 
 
@@ -28,6 +29,9 @@ def create_app(engine: AsyncEngine | None = None, redis_url: str | None = None) 
         # constructed in tests without a full environment.
         settings = get_settings()
         app.state.settings = settings
+        # Activate OpenTelemetry only when an OTLP endpoint is configured; a
+        # no-op otherwise (OpenTelemetry GenAI semconv).
+        setup_telemetry(settings)
         app.state.hasher = PasswordHasher(
             settings.argon2_memory_kib, settings.argon2_time_cost, settings.argon2_parallelism
         )
@@ -45,10 +49,13 @@ def create_app(engine: AsyncEngine | None = None, redis_url: str | None = None) 
 
     app = FastAPI(title="Atlas API", version="0.1.0", lifespan=lifespan)
     app.add_middleware(BaseHTTPMiddleware, dispatch=request_id_middleware)
+    app.add_middleware(BaseHTTPMiddleware, dispatch=observe_request)
     install_error_handlers(app)
     app.include_router(health_router)
     app.include_router(auth_router, prefix="/v1")
     app.include_router(runs_router, prefix="/v1")
+    # Prometheus exposition for request RED metrics + run/token counters.
+    app.add_route("/metrics", metrics_endpoint, methods=["GET"])
     return app
 
 

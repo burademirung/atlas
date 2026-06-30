@@ -9,8 +9,16 @@
 - [Security posture in one paragraph](#security-posture-in-one-paragraph)
 - [Trust boundaries](#trust-boundaries)
 - [The defense-in-depth layers](#the-defense-in-depth-layers)
+- [Edge response headers & CSP](#edge-response-headers--csp)
+- [PII redaction](#pii-redaction)
+- [Denial-of-wallet guardrails](#denial-of-wallet-guardrails)
+- [Trusted-proxy IP resolution](#trusted-proxy-ip-resolution)
+- [Vulnerability disclosure (security.txt)](#vulnerability-disclosure-securitytxt)
 - [Standards mapping](#standards-mapping)
 - [Implemented vs planned](#implemented-vs-planned)
+
+> Privacy & regulatory posture (GDPR / CCPA / HIPAA) has its own page:
+> [`compliance.md`](compliance.md).
 
 ## Security posture in one paragraph
 
@@ -62,6 +70,13 @@ Browser (untrusted) ─▶ Edge Worker ─▶ API ─▶ Agent Worker ─▶ { C
 - **Per-run caps:** live edition — question ≤ 500 chars, `web_search max_uses: 5`,
   `max_tokens: 6000`; production — `max_subquestions` (4) × `max_sources_per_q` (3) bound the
   searches per run, and the graph is acyclic (cannot loop).
+- **Production guardrails (now enforced, OWASP LLM10):** a global **kill-switch**
+  (`service_paused` → `503`), per-user (`daily_run_quota` = 50) and per-IP (`daily_run_quota_ip` =
+  200) **daily quotas** (Redis counters that expire at UTC midnight), an **Idempotency-Key** dedupe
+  so a retried/double-clicked submission is charged once, and a per-run **token ceiling**
+  (`max_run_tokens` = 50 000) that truncates a run mid-flight rather than spinning. All live in
+  [`security/guardrails.py`](../apps/api/src/atlas_api/security/guardrails.py); see
+  [Denial-of-wallet guardrails](#denial-of-wallet-guardrails).
 - **Idempotency + cancellation:** `POST /v1/runs` enqueues with `_job_id=run:<id>`; the worker
   supports `allow_abort_jobs` and checks a Redis cancel flag between graph supersteps.
 - **Daily caps (live edition):** per-IP (`20`) + global (`500`) counters in the D1 `rate_limits`
@@ -110,6 +125,105 @@ Browser (untrusted) ─▶ Edge Worker ─▶ API ─▶ Agent Worker ─▶ { C
   (RFC-9457 problem responses, no stack-trace leakage). See [observability](observability.md).
 - **k-anonymity for password checks:** the Have I Been Pwned integration sends only a SHA-1 prefix
   ([`breach/hibp.py`](../apps/api/src/atlas_api/breach/hibp.py)) — data minimization by design.
+- **PII redaction on write + in logs:** breach descriptions are masked before they are persisted or
+  logged ([PII redaction](#pii-redaction)).
+- **Storage limitation + erasure (live edition):** a 30-day retention cron and a self-service
+  `DELETE /api/runs/:id` keep stored PII bounded and deletable. Full privacy posture:
+  [`compliance.md`](compliance.md).
+
+## Edge response headers & CSP
+
+The live Worker sets a full set of **defense-in-depth response headers on every response** — HTML,
+API/JSON, the SSE stream, and the static-asset fall-through (OWASP ASVS V14 Configuration; MDN
+security headers). They are applied two ways so there is no gap:
+
+- `/api/*` and the SSE stream — a `withSecurityHeaders()` wrapper at the single `fetch` choke-point
+  re-emits every response with the headers layered on
+  ([`apps/cloudflare/src/index.ts`](../apps/cloudflare/src/index.ts)).
+- Static assets — a [`public/_headers`](../apps/cloudflare/public/_headers) file applies the same set
+  to HTML/CSS/JS served by the `ASSETS` binding.
+
+| Header | Value (summary) |
+|---|---|
+| `Content-Security-Policy` | `default-src 'self'`; `script-src 'self' https://challenges.cloudflare.com`; `style-src 'self' https://fonts.googleapis.com 'unsafe-inline'`; `font-src 'self' https://fonts.gstatic.com`; `img-src 'self' data:`; `connect-src 'self'`; `frame-src https://challenges.cloudflare.com`; `base-uri 'self'`; `form-action 'self'`; `frame-ancestors 'none'`; `object-src 'none'` |
+| `Strict-Transport-Security` | `max-age=31536000; includeSubDomains` |
+| `X-Content-Type-Options` | `nosniff` |
+| `Referrer-Policy` | `strict-origin-when-cross-origin` |
+| `Permissions-Policy` | `camera=(), microphone=(), geolocation=()` |
+| `X-Frame-Options` | `DENY` |
+
+CSP notes (honest): `'unsafe-inline'` is kept **only** for `style-src`, because `index.html` sets
+inline `style="--x:…%"` custom properties on the animated diagram nodes — there is **no inline
+script** (`script-src` has no `'unsafe-inline'`). `challenges.cloudflare.com` is allowed in
+`script-src` + `frame-src` for the optional Turnstile widget; `connect-src 'self'` because the
+browser only talks to this Worker (Turnstile siteverify is server-side). This closes the previously
+documented "missing strict CSP / no edge security headers" gap (see
+[threat model §3](threat-model.md#3-insecure-output-handling--xss-from-model-output-owasp-llm05)).
+
+## PII redaction
+
+Firstline ingests free-text breach descriptions that routinely contain the leaked identifiers
+themselves (SSNs, card numbers, emails, phone numbers). Those are **masked before persistence and
+before logging** so they neither sit in durable storage nor leak into log sinks (OWASP ASVS V8.3;
+OWASP LLM02 — Sensitive Information Disclosure; NIST SP 800-122).
+
+- **Live edition** — `redactPII()` in [`src/index.ts`](../apps/cloudflare/src/index.ts) masks the
+  `question` and writes the masked copy to D1; Claude still receives the **original** text in-memory
+  for an accurate plan.
+- **Production edition** — `redact_pii()`
+  ([`security/redaction.py`](../apps/api/src/atlas_api/security/redaction.py)) runs in
+  `RunRepository.create()` *before* the row is flushed, and a `RedactionFilter` on the root log
+  handler ([`logging.py`](../apps/api/src/atlas_api/logging.py)) scrubs every log record.
+
+The matcher handles emails, US SSNs, **Luhn-validated** card numbers (so it doesn't clobber long
+order ids), and phone numbers. It is heuristic by design — it may over-mask or miss exotic formats —
+so it is **defense-in-depth alongside** access control and encryption, not a substitute. The
+generated `report` is deliberately **not** redacted: it legitimately contains official hotline
+numbers (e.g. the FTC IdentityTheft line) that the phone heuristic would destroy. Full data-handling
+posture: [`compliance.md`](compliance.md).
+
+## Denial-of-wallet guardrails
+
+The production `POST /v1/runs` path is wrapped in layered cost controls
+([`security/guardrails.py`](../apps/api/src/atlas_api/security/guardrails.py),
+[`runs/router.py`](../apps/api/src/atlas_api/runs/router.py)), enforced in this order:
+
+1. **Kill-switch** — `check_service_paused(settings.service_paused)` returns `503` when an operator
+   pauses the service, so a runaway client or upstream incident can be contained without a redeploy.
+2. **Idempotency-Key** — a prior run id stored under the caller's `Idempotency-Key` is returned
+   instead of starting (and billing) a second run; the key dedupes for `idempotency_ttl_seconds`
+   (default 24 h).
+3. **Daily quotas** — `enforce_daily_quota()` increments per-user (`daily_run_quota` = 50) and per-IP
+   (`daily_run_quota_ip` = 200) Redis counters that **expire at the next UTC midnight**; either
+   ceiling returns `429`.
+4. **Per-run token ceiling** — the worker stops a run and marks it `truncated` once cumulative token
+   usage reaches `max_run_tokens` (default 50 000), via `over_token_cap()`
+   ([`worker.py`](../apps/api/src/atlas_api/worker.py)).
+
+These close the previously documented "spend kill-switch + per-user quotas not yet enforced" gap.
+
+## Trusted-proxy IP resolution
+
+The per-IP quota key must not be forgeable, or the denial-of-wallet guardrail is trivially bypassed.
+`X-Forwarded-For` is `client, proxy1, …, proxyN` where the **left-most** entries are
+attacker-controlled (a client can prepend arbitrary values; a trusted proxy only ever *appends*).
+Trusting the left-most value would let anyone mint a fresh quota key per request.
+
+`client_ip(request, trusted_proxy_count)`
+([`security/guardrails.py`](../apps/api/src/atlas_api/security/guardrails.py)) therefore reads the IP
+at `trusted_proxy_count` hops from the **right** — the hops appended by our own infrastructure. With
+one trusted proxy (the ALB, the default `trusted_proxy_count` = 1) that is the last element; the
+candidate is validated as a real IP or it falls back to the socket peer. Setting
+`trusted_proxy_count = 0` ignores the header entirely and uses `request.client.host`. The robust
+deployment posture is to also bind Uvicorn's `--forwarded-allow-ips` (or `ProxyHeadersMiddleware`) to
+the VPC CIDR so the socket peer is already correct; this parser is the defense-in-depth fallback.
+**This fixed a HIGH "quota bypass via X-Forwarded-For spoofing" finding.**
+
+## Vulnerability disclosure (security.txt)
+
+The live edition publishes [`/.well-known/security.txt`](../apps/cloudflare/public/.well-known/security.txt)
+(RFC 9116) advertising a `Contact:`, `Expires:`, and `Preferred-Languages:` so researchers have a
+standard channel. The repository's full disclosure policy is [`SECURITY.md`](../SECURITY.md).
 
 ## Standards mapping
 
@@ -121,14 +235,19 @@ Browser (untrusted) ─▶ Edge Worker ─▶ API ─▶ Agent Worker ─▶ { C
 | Authentication | [NIST SP 800-63B](https://pages.nist.gov/800-63-3/sp800-63b.html) | argon2id, token lifecycle (layer 3) |
 | Incident handling | [NIST SP 800-61](https://csrc.nist.gov/pubs/sp/800/61/r3/final) | the product's own breach-response guidance; the [runbook](runbook.md) |
 | JWT hygiene | [RFC 8725](https://www.rfc-editor.org/rfc/rfc8725) | `auth/tokens.py` (layer 3) |
+| Security headers | [MDN](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers) / ASVS V14 | edge CSP/HSTS/… (`src/index.ts`, `public/_headers`) |
+| Privacy / PII | [GDPR](https://gdpr-info.eu/) · [CCPA](https://oag.ca.gov/privacy/ccpa) · NIST SP 800-122 | redaction, retention, erasure — [`compliance.md`](compliance.md) |
+| Disclosure | [RFC 9116](https://www.rfc-editor.org/rfc/rfc9116) | `/.well-known/security.txt`, `SECURITY.md` |
 
 ## Implemented vs planned
 
 This document describes the **architecture**; the [threat model](threat-model.md#status-summary)
-carries the authoritative, per-control status table (✅ / 🟡 / 📋). The major **planned** controls
-not yet enforced in code are: Postgres **Row-Level Security**, a strict **CSP + DOMPurify**
-sanitization in the renderer, a **spend kill-switch** + per-user daily quota enforced atomically,
-**PII redaction** in logs/traces, a data-retention / **erasure** endpoint, **cosign admission
-verification** in-cluster, and a **CI cross-tenant authz test**. Treat those as the hardening
-backlog, not as shipped guarantees.
-</content>
+carries the authoritative, per-control status table (✅ / 🟡 / 📋). A recent hardening pass **shipped**
+several controls that were previously on the backlog: full **edge security headers + strict CSP**,
+**PII redaction** on write and in logs, a **spend kill-switch + per-user/per-IP daily quotas + per-run
+token ceiling** (with spoof-resistant client-IP resolution), **30-day retention** and **self-service
+erasure** in the live edition, a `/.well-known/security.txt`, a coverage gate, and Semgrep + Bandit
+SAST. The major **still-planned** controls are: Postgres **Row-Level Security**, **DOMPurify**
+output-sanitization in the renderer, a production **retention purge job** + `DELETE /v1/runs/:id`
+endpoint, **cosign admission verification** in-cluster, and a **CI cross-tenant authz test**. Treat
+those as the remaining hardening backlog, not as shipped guarantees.

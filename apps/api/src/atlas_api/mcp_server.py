@@ -55,8 +55,7 @@ def breach_notification_law(jurisdiction: str) -> str:
         r = notification_law(jurisdiction)
     except KeyError:
         return (
-            f"Unknown jurisdiction '{jurisdiction}'. "
-            "Try: us_state, gdpr, hipaa, ccpa, glba, pci."
+            f"Unknown jurisdiction '{jurisdiction}'. Try: us_state, gdpr, hipaa, ccpa, glba, pci."
         )
     return (
         f"**{r.name}**\nWho to notify: {r.notify}\nDeadline: {r.deadline}\n"

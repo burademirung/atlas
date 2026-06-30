@@ -22,7 +22,12 @@ async def pwned_password_count(password: str, *, timeout: float = 10.0) -> int: 
 
     k-anonymity: only the SHA-1 prefix is sent; the suffix is matched locally.
     """
-    digest = hashlib.sha1(password.encode(), usedforsecurity=False).hexdigest().upper()
+    # SHA-1 is REQUIRED here: the HIBP Pwned Passwords range API is defined over
+    # SHA-1 hashes (k-anonymity — only the first 5 hex chars leave this process).
+    # Not password storage/hashing; usedforsecurity=False marks the intent. See
+    # https://haveibeenpwned.com/API/v3#PwnedPasswords (CodeQL false positive).
+    sha1 = hashlib.sha1(password.encode(), usedforsecurity=False)  # noqa: S324  # nosec
+    digest = sha1.hexdigest().upper()
     prefix, suffix = digest[:5], digest[5:]
     async with httpx.AsyncClient(timeout=timeout) as client:
         resp = await client.get(f"{_RANGE_URL}{prefix}", headers={"user-agent": _USER_AGENT})

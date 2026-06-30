@@ -13,7 +13,7 @@ from typing import Any
 
 from redis.asyncio import Redis
 
-TERMINAL_EVENTS = {"done", "error", "cancelled"}
+TERMINAL_EVENTS = {"done", "error", "cancelled", "truncated"}
 
 
 def stream_key(run_id: int) -> str:

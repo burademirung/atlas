@@ -1,0 +1,10 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Report a security vulnerability (private)
+    url: https://github.com/burademirung/atlas/security/policy
+    about: >-
+      Do NOT open a public issue for security vulnerabilities. Please follow our
+      Security Policy (SECURITY.md) and report privately to burademirung@gmail.com.
+  - name: Questions & discussion
+    url: https://github.com/burademirung/atlas/discussions
+    about: Ask questions, share ideas, and get help in GitHub Discussions.

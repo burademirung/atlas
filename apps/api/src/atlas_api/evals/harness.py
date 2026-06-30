@@ -68,9 +68,7 @@ async def run_eval(
 ) -> list[CaseResult]:
     results: list[CaseResult] = []
     for q in questions:
-        results.append(
-            await evaluate_one(q, model=model, provider=provider, settings=settings)
-        )
+        results.append(await evaluate_one(q, model=model, provider=provider, settings=settings))
     return results
 
 

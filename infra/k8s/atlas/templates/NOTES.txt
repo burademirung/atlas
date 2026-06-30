@@ -21,3 +21,13 @@ The API is exposed at: https://{{ .Values.ingress.host }}{{ .Values.ingress.path
 
 Reminder: KEDA, External Secrets Operator and the AWS Load Balancer Controller
 are cluster add-ons and must already be installed (see chart README).
+{{- if not .Values.namespace.create }}
+
+Pod Security Standards: namespace "{{ .Release.Namespace }}" is NOT chart-managed
+(namespace.create=false). Ensure the "restricted" Pod Security Admission labels
+are applied to it, e.g.:
+  kubectl label namespace {{ .Release.Namespace }} \
+    pod-security.kubernetes.io/enforce=restricted \
+    pod-security.kubernetes.io/warn=restricted \
+    pod-security.kubernetes.io/audit=restricted
+{{- end }}

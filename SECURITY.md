@@ -65,4 +65,3 @@ CSP + DOMPurify, a spend kill-switch, PII redaction in logs). Both the implement
 controls — with honest status markers — are documented in
 [`docs/threat-model.md`](docs/threat-model.md) and [`docs/security.md`](docs/security.md), mapped
 to OWASP Top 10, the OWASP LLM Top 10, and NIST SP 800-61 / SP 800-63B.
-</content>

@@ -130,4 +130,3 @@ full commit SHA, and use OIDC for AWS. Full reference: [`.github/WORKFLOWS.md`](
 Required GitHub Environments: `production` (deploy), `cloudflare-production` (Worker), `infra-plan`
 (Terraform plan) — all with required reviewers. The one-time OIDC/IAM setup is documented in
 [`.github/WORKFLOWS.md`](../.github/WORKFLOWS.md#oidc--aws-iam-setup-one-time).
-</content>

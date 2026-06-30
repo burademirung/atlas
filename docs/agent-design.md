@@ -124,12 +124,15 @@ Companion modules:
   `pwned_password_count` uses the **free, key-less range API with k-anonymity** (only a SHA-1 prefix
   leaves the machine); `HIBPClient.breached_account` uses the authenticated breach API.
 
-> **Honest gap:** the playbooks are wired into `write_node`, the `run_research` runner, and the MCP
-> server, but the **arq worker** invokes the graph with only `{"question": …}` (no `data_types`),
-> and `POST /v1/runs` has no `data_types` field — so on the **production HTTP run path** the
-> playbooks are not currently injected. They are fully active via the MCP server and any caller of
-> `run_research(..., data_types=[…])`. Wiring `data_types` through the request schema and the worker
-> is the obvious next step.
+> **Now wired end to end (June 2026).** `data_types` flows through the whole production HTTP run path:
+> `RunCreateIn.data_types` ([`runs/schemas.py`](../apps/api/src/atlas_api/runs/schemas.py)) →
+> persisted on the run's `config` JSONB in `RunRepository.create()`
+> ([`runs/repository.py`](../apps/api/src/atlas_api/runs/repository.py)) → read back and passed to the
+> graph by the **arq worker** (`graph.astream({"question": …, "data_types": …})` in
+> [`worker.py`](../apps/api/src/atlas_api/worker.py)) → `playbook_context(state["data_types"])` in
+> `write_node` ([`agents/nodes.py`](../apps/api/src/atlas_api/agents/nodes.py)). So `POST /v1/runs`
+> now injects the matching breach playbooks, just like the MCP server and any direct
+> `run_research(..., data_types=[…])` caller. (Closes the previously-documented production-path gap.)
 
 ## Search providers
 
@@ -195,4 +198,3 @@ Claude + Tavily. Details: [testing](testing.md#the-agent-quality-eval-harness).
 
 Legend: ✅ implemented · 📋 planned. The historical design intent is in
 [`docs/superpowers/specs/`](superpowers/).
-</content>

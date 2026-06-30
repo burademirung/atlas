@@ -54,6 +54,37 @@ serviceAccount:
     annotations: {}
 
 # ---------------------------------------------------------------------------
+# Namespace — optionally chart-managed so the Pod Security Admission labels
+# (Pod Security Standards "restricted", CIS Kubernetes Benchmark 5.2 / NIST
+# 800-53 AC-6, CM-7) are enforced at the namespace boundary.
+#
+# Disabled by default: most installs create the namespace out of band
+# (`helm install --create-namespace`, or a GitOps/platform layer). When that is
+# the case the SAME labels MUST be applied to the namespace there — e.g.:
+#
+#   kubectl label namespace atlas \
+#     pod-security.kubernetes.io/enforce=restricted \
+#     pod-security.kubernetes.io/enforce-version=latest \
+#     pod-security.kubernetes.io/audit=restricted \
+#     pod-security.kubernetes.io/warn=restricted
+#
+# Set create: true ONLY if Helm should own the namespace object (do NOT also
+# pass --create-namespace, which would race Helm for ownership).
+# ---------------------------------------------------------------------------
+namespace:
+  create: false
+  # Defaults to .Release.Namespace when empty.
+  name: ""
+  # Pod Security Admission labels — enforce the "restricted" profile.
+  podSecurityLabels:
+    pod-security.kubernetes.io/enforce: restricted
+    pod-security.kubernetes.io/enforce-version: latest
+    pod-security.kubernetes.io/audit: restricted
+    pod-security.kubernetes.io/audit-version: latest
+    pod-security.kubernetes.io/warn: restricted
+    pod-security.kubernetes.io/warn-version: latest
+
+# ---------------------------------------------------------------------------
 # Non-secret application configuration (rendered into a ConfigMap, loaded via
 # envFrom). Secrets live in the ExternalSecret-managed Secret instead.
 #

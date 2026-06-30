@@ -21,6 +21,9 @@ dependencies = [
     "langchain-anthropic>=1.4.8",
     "anthropic>=0.113",
     "mcp>=1.2.0",
+    "prometheus-client>=0.21",
+    "opentelemetry-sdk>=1.29",
+    "opentelemetry-exporter-otlp-proto-http>=1.29",
 ]
 
 [project.scripts]
@@ -30,6 +33,7 @@ firstline-mcp = "atlas_api.mcp_server:main"
 dev = [
     "pytest>=8.4",
     "pytest-asyncio>=1.0",
+    "pytest-cov>=6.0",
     "testcontainers[postgres,redis]>=4.13",
     "ruff>=0.13",
     "mypy>=1.14",
@@ -45,6 +49,28 @@ packages = ["src/atlas_api"]
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 testpaths = ["tests"]
+
+[tool.coverage.run]
+branch = true
+source = ["atlas_api"]
+# SQLAlchemy's async layer dispatches through greenlets; without this, lines
+# executed inside awaited DB calls (e.g. FastAPI route bodies) are mis-attributed
+# as uncovered. Tracing greenlets + threads yields accurate measurement.
+concurrency = ["thread", "greenlet"]
+omit = [
+    "src/atlas_api/migrations/*",
+    "tests/*",
+]
+
+[tool.coverage.report]
+show_missing = true
+skip_covered = false
+exclude_lines = [
+    "pragma: no cover",
+    "if TYPE_CHECKING:",
+    "raise NotImplementedError",
+    "\\.\\.\\.",
+]
 
 [tool.ruff]
 line-length = 100
@@ -65,7 +91,7 @@ strict = true
 mypy_path = "src"
 
 [[tool.mypy.overrides]]
-module = ["langgraph.*", "langchain_anthropic.*", "mcp.*"]
+module = ["langgraph.*", "langchain_anthropic.*", "mcp.*", "opentelemetry.*"]
 ignore_missing_imports = true
 
 [[tool.mypy.overrides]]

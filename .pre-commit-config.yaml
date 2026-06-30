@@ -1,0 +1,57 @@
+# Pre-commit hooks for the Atlas / Firstline monorepo.
+#
+# Setup (run once after cloning):
+#   pip install pre-commit            # or: pipx install pre-commit / brew install pre-commit
+#   pre-commit install                # install the git hook
+#   pre-commit run --all-files        # optional: lint the whole tree once
+#
+# Hooks run automatically on `git commit`. Update pins with `pre-commit autoupdate`.
+
+# Don't run any hook against vendored, generated, or virtualenv paths.
+exclude: |
+  (?x)^(
+      .*/\.venv/.*|
+      .*/node_modules/.*|
+      .*/dist/.*|
+      .*/build/.*|
+      .*/\.next/.*|
+      .*/\.wrangler/.*|
+      .*/\.mypy_cache/.*|
+      .*/\.ruff_cache/.*|
+      .*/\.pytest_cache/.*|
+      apps/api/uv\.lock
+  )$
+
+repos:
+  # Ruff — lint + format the Python API (apps/api).
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.13.0
+    hooks:
+      - id: ruff
+        name: ruff (lint)
+        args: [--fix]
+        files: ^apps/api/.*\.py$
+      - id: ruff-format
+        name: ruff (format)
+        files: ^apps/api/.*\.py$
+
+  # General-purpose hygiene hooks.
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: end-of-file-fixer
+      - id: trailing-whitespace
+        args: [--markdown-linebreak-ext=md]
+      - id: check-yaml
+        args: [--allow-multiple-documents]
+      - id: check-json
+      - id: check-merge-conflict
+      - id: check-added-large-files
+        args: [--maxkb=1024]
+      - id: detect-private-key
+
+  # Secret scanning.
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.21.2
+    hooks:
+      - id: gitleaks

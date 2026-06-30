@@ -22,5 +22,6 @@ def build_chat_model(settings: Settings) -> BaseChatModel:
         max_retries=2,
         stop=None,
         api_key=settings.anthropic_api_key,  # type: ignore[arg-type]
-        max_tokens_to_sample=4096,
+        # Per-call output ceiling (denial-of-wallet guard; OWASP LLM10).
+        max_tokens_to_sample=settings.max_output_tokens,
     )

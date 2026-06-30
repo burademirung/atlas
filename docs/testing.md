@@ -132,4 +132,3 @@ JavaScript/TypeScript on PRs, pushes, and weekly.
 [`eval.yml`](../.github/workflows/eval.yml) runs the **paid** live agent-quality eval on a weekly
 schedule (Mondays 07:00 UTC) + manual `workflow_dispatch`, using the real Anthropic + Tavily keys —
 deliberately **not** per-PR, to avoid per-push API spend.
-</content>

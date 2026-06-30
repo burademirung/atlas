@@ -99,4 +99,3 @@ More on the test strategy: [`docs/testing.md`](docs/testing.md).
 
 By participating you agree to the [Code of Conduct](CODE_OF_CONDUCT.md). Report concerns to
 <burademirung@gmail.com>. To report a security vulnerability, follow [`SECURITY.md`](SECURITY.md).
-</content>

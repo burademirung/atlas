@@ -1,5 +1,10 @@
 # Atlas — Deep-Research Studio
 
+[![CI](https://github.com/burademirung/atlas/actions/workflows/ci.yml/badge.svg)](https://github.com/burademirung/atlas/actions/workflows/ci.yml)
+[![Coverage](https://img.shields.io/badge/coverage-~93%25-brightgreen)](apps/api/pyproject.toml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Security Policy](https://img.shields.io/badge/security-policy-blue.svg)](SECURITY.md)
+
 > Ask a question → Atlas plans the research, **searches the live web**, grounds its
 > answer in real sources, and **streams back a fully-cited Markdown report**.
 
@@ -18,7 +23,32 @@ required technology is **load-bearing, not decorative**. See [`STACK.md`](STACK.
 
 - Live edition — deployed: <https://atlas-research.burademirung.workers.dev>
 - Production edition — runs locally via `docker compose up`; cloud deploy is code-complete (IaC + CI/CD), applied with your own AWS/Cloudflare credentials
-- Tests — `uv run pytest` green; `ruff` + `mypy --strict` clean; CI gates on Trivy + gitleaks + CodeQL
+- Tests — 78 passing, **~93% coverage** (CI gate `--cov-fail-under=85`); `ruff` + `mypy --strict`
+  clean; CI gates on Trivy + gitleaks + CodeQL, plus Semgrep + Bandit SAST (report-only)
+
+---
+
+## Privacy & data protection
+
+Firstline ingests **sensitive PII** — people describe breaches in free text that often contains the
+very identifiers that leaked (SSNs, card numbers, emails, phones). The data-handling controls are
+built in, not bolted on:
+
+- **Redaction on write** — the breach description is PII-masked **before** it is persisted (and
+  before it is logged); the model still sees the original in-memory to give accurate advice
+  ([`security/redaction.py`](apps/api/src/atlas_api/security/redaction.py), `redactPII()` in the
+  Worker). The `report` is left intact so official hotline numbers survive.
+- **30-day retention + auto-delete** — the live edition runs a daily Cloudflare cron that purges
+  runs/sources older than 30 days (GDPR/CCPA storage-limitation).
+- **Self-service erasure** — `DELETE /api/runs/:id` deletes a run and its sources on demand (live
+  edition). Encryption at rest (RDS/ElastiCache/S3 KMS) and in transit (TLS, HSTS) throughout.
+- **Denial-of-wallet guardrails** — kill-switch, per-user/per-IP daily quotas, idempotency, and a
+  per-run token ceiling bound LLM spend (OWASP LLM10).
+- **Security disclosure** — [`/.well-known/security.txt`](apps/cloudflare/public/.well-known/security.txt)
+  (RFC 9116) + [`SECURITY.md`](SECURITY.md).
+
+Full posture — including the honest **GDPR / CCPA / HIPAA** stance and what is still legal/operational
+work — is in [`docs/compliance.md`](docs/compliance.md).
 
 ---
 
@@ -238,8 +268,9 @@ The full map is the [documentation index](docs/README.md) (organized by the
 **Security**
 
 - [`SECURITY.md`](SECURITY.md) — vulnerability disclosure policy + posture summary
-- [`docs/security.md`](docs/security.md) — defense-in-depth security architecture (OWASP/NIST mapped)
+- [`docs/security.md`](docs/security.md) — defense-in-depth security architecture (OWASP/NIST mapped); security headers/CSP, PII redaction, denial-of-wallet guardrails
 - [`docs/threat-model.md`](docs/threat-model.md) — attack paths + mitigations (prompt injection, denial-of-wallet, XSS, SSRF, authn/z, secrets, PII)
+- [`docs/compliance.md`](docs/compliance.md) — privacy & compliance posture (GDPR / CCPA / HIPAA, redaction, retention, erasure)
 
 **Decisions (ADRs)** — [`docs/adr/`](docs/adr/)
 
@@ -261,6 +292,9 @@ The full map is the [documentation index](docs/README.md) (organized by the
 
 - [`README.md`](README.md) — this file · [`docs/README.md`](docs/README.md) — the documentation index
 - [`CHANGELOG.md`](CHANGELOG.md) — release history (Keep a Changelog)
+- [`LICENSE`](LICENSE) — MIT · [`CONTRIBUTING.md`](CONTRIBUTING.md) — contribution guide
 - [`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md) — Contributor Covenant
+- Repo governance: [`.editorconfig`](.editorconfig), [`.pre-commit-config.yaml`](.pre-commit-config.yaml),
+  [`.github/CODEOWNERS`](.github/CODEOWNERS), PR + issue templates ([`.github/`](.github/))
 - [`docs/documentation-strategy.md`](docs/documentation-strategy.md) — what docs this class of project needs, and why
 - [`docs/superpowers/specs/`](docs/superpowers/specs/) — the full design spec behind Atlas

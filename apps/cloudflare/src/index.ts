@@ -104,48 +104,171 @@ const json = (data: unknown, status = 200): Response =>
     headers: { "content-type": "application/json" },
   });
 
+// Defence-in-depth response headers applied to EVERY response — HTML, API/JSON,
+// the SSE stream, and the static-asset fallthrough. References:
+//   - OWASP ASVS V14 (Configuration) — security headers on all responses.
+//   - MDN: Content-Security-Policy, Strict-Transport-Security, X-Content-Type-Options,
+//     Referrer-Policy, Permissions-Policy, X-Frame-Options.
+// CSP notes: 'unsafe-inline' is kept ONLY for style-src because index.html sets
+// inline `style="--x:..%"` custom properties on the animated diagram nodes — there
+// is no inline script. challenges.cloudflare.com is allowed for the Turnstile widget
+// (script-src + frame-src). connect-src is 'self' only: the browser talks to this
+// Worker (incl. the SSE endpoint); Turnstile siteverify happens server-side.
+const SECURITY_HEADERS: Record<string, string> = {
+  "Content-Security-Policy":
+    "default-src 'self'; script-src 'self' https://challenges.cloudflare.com; " +
+    "style-src 'self' https://fonts.googleapis.com 'unsafe-inline'; " +
+    "font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self'; " +
+    "frame-src https://challenges.cloudflare.com; base-uri 'self'; form-action 'self'; " +
+    "frame-ancestors 'none'; object-src 'none'",
+  "Strict-Transport-Security": "max-age=31536000; includeSubDomains",
+  "X-Content-Type-Options": "nosniff",
+  "Referrer-Policy": "strict-origin-when-cross-origin",
+  "Permissions-Policy": "camera=(), microphone=(), geolocation=()",
+  "X-Frame-Options": "DENY",
+};
+
+/**
+ * Re-emit a response with the security headers added. Works for streaming bodies
+ * (e.g. the SSE response): the original body stream and content-type are preserved,
+ * we only layer the security headers on top.
+ */
+function withSecurityHeaders(resp: Response): Response {
+  const headers = new Headers(resp.headers);
+  for (const [k, v] of Object.entries(SECURITY_HEADERS)) headers.set(k, v);
+  return new Response(resp.body, {
+    status: resp.status,
+    statusText: resp.statusText,
+    headers,
+  });
+}
+
+/**
+ * Mask common PII so it is never written to durable storage (D1) or logs.
+ * GDPR Art. 5(1)(c) / CCPA data-minimization: we keep only what we need. Claude
+ * still receives the ORIGINAL text in-memory to produce an accurate plan; only the
+ * persisted/logged copy is redacted. We deliberately do NOT redact what is streamed
+ * live to the user (it's their own data, shown back to them, never stored raw).
+ * Trade-off: redaction is heuristic — it can over-mask (e.g. a 16-digit order id)
+ * or miss exotic formats; we accept false positives in stored data to avoid leaks.
+ */
+export function redactPII(text: string): string {
+  let out = text;
+  // Emails first (before phone/CC digit runs can chew into them).
+  out = out.replace(/[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/g, "[redacted-email]");
+  // US SSN: 123-45-6789 or 123456789.
+  out = out.replace(/\b\d{3}-?\d{2}-?\d{4}\b/g, "[redacted-ssn]");
+  // Credit-card-like: 13–19 digit runs allowing space/dash separators; Luhn-checked
+  // so we don't clobber arbitrary long numbers (order ids, case numbers, etc.).
+  out = out.replace(/\b(?:\d[ -]?){13,19}\b/g, (m) =>
+    luhnValid(m.replace(/[ -]/g, "")) ? "[redacted-cc]" : m,
+  );
+  // Phone numbers: US/international-ish, e.g. +1 (555) 123-4567, 555-123-4567.
+  out = out.replace(
+    /(?<!\d)(?:\+?\d{1,3}[ .-]?)?(?:\(\d{3}\)|\d{3})[ .-]?\d{3}[ .-]?\d{4}(?!\d)/g,
+    "[redacted-phone]",
+  );
+  return out;
+}
+
+/** Luhn checksum — distinguishes real card numbers from random digit runs. */
+function luhnValid(digits: string): boolean {
+  if (digits.length < 13 || digits.length > 19) return false;
+  let sum = 0;
+  let alt = false;
+  for (let i = digits.length - 1; i >= 0; i--) {
+    let d = digits.charCodeAt(i) - 48;
+    if (d < 0 || d > 9) return false;
+    if (alt) {
+      d *= 2;
+      if (d > 9) d -= 9;
+    }
+    sum += d;
+    alt = !alt;
+  }
+  return sum % 10 === 0;
+}
+
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
-    const url = new URL(request.url);
+    // Single choke-point: every response (HTML, API, SSE, static assets) is
+    // re-emitted with the security headers layered on.
+    const response = await route(request, env);
+    return withSecurityHeaders(response);
+  },
 
-    if (url.pathname === "/api/health") {
-      return json({ status: "ok", model: MODEL, key: env.ANTHROPIC_API_KEY ? "set" : "missing" });
-    }
-
-    if (url.pathname === "/api/config" && request.method === "GET") {
-      return json({
-        turnstile: Boolean(env.TURNSTILE_SITEKEY),
-        sitekey: env.TURNSTILE_SITEKEY ?? null,
-      });
-    }
-
-    if (url.pathname === "/api/research" && request.method === "POST") {
-      return handleResearch(request, env);
-    }
-
-    if (url.pathname === "/api/runs" && request.method === "GET") {
-      const { results } = await env.DB.prepare(
-        "SELECT id, question, status, created_at FROM runs ORDER BY created_at DESC LIMIT 25",
-      ).all();
-      return json({ runs: results });
-    }
-
-    const runMatch = url.pathname.match(/^\/api\/runs\/([\w-]+)$/);
-    if (runMatch && request.method === "GET") {
-      const id = runMatch[1];
-      const run = await env.DB.prepare("SELECT * FROM runs WHERE id = ?").bind(id).first();
-      if (!run) return json({ error: "not found" }, 404);
-      const { results: sources } = await env.DB.prepare(
-        "SELECT url, title, snippet FROM sources WHERE run_id = ?",
-      )
-        .bind(id)
-        .all();
-      return json({ run, sources });
-    }
-
-    return env.ASSETS.fetch(request);
+  // Daily retention sweep (see wrangler.jsonc triggers.crons). Deletes runs (and
+  // their sources) older than 30 days plus stale rate-limit rows — GDPR/CCPA
+  // storage-limitation. Idempotent: re-running deletes nothing new.
+  async scheduled(_controller: ScheduledController, env: Env, ctx: ExecutionContext): Promise<void> {
+    ctx.waitUntil(purgeExpired(env));
   },
 } satisfies ExportedHandler<Env>;
+
+async function route(request: Request, env: Env): Promise<Response> {
+  const url = new URL(request.url);
+
+  if (url.pathname === "/api/health") {
+    return json({ status: "ok", model: MODEL, key: env.ANTHROPIC_API_KEY ? "set" : "missing" });
+  }
+
+  if (url.pathname === "/api/config" && request.method === "GET") {
+    return json({
+      turnstile: Boolean(env.TURNSTILE_SITEKEY),
+      sitekey: env.TURNSTILE_SITEKEY ?? null,
+    });
+  }
+
+  if (url.pathname === "/api/research" && request.method === "POST") {
+    return handleResearch(request, env);
+  }
+
+  if (url.pathname === "/api/runs" && request.method === "GET") {
+    const { results } = await env.DB.prepare(
+      "SELECT id, question, status, created_at FROM runs ORDER BY created_at DESC LIMIT 25",
+    ).all();
+    return json({ runs: results });
+  }
+
+  const runMatch = url.pathname.match(/^\/api\/runs\/([\w-]+)$/);
+  if (runMatch && request.method === "GET") {
+    const id = runMatch[1];
+    const run = await env.DB.prepare("SELECT * FROM runs WHERE id = ?").bind(id).first();
+    if (!run) return json({ error: "not found" }, 404);
+    const { results: sources } = await env.DB.prepare(
+      "SELECT url, title, snippet FROM sources WHERE run_id = ?",
+    )
+      .bind(id)
+      .all();
+    return json({ run, sources });
+  }
+
+  // Self-service erasure (GDPR Art. 17 / CCPA right to delete). The run id is an
+  // unguessable random UUID, so anonymous self-service delete is acceptable here.
+  if (runMatch && request.method === "DELETE") {
+    const id = runMatch[1];
+    await env.DB.batch([
+      env.DB.prepare("DELETE FROM sources WHERE run_id = ?").bind(id),
+      env.DB.prepare("DELETE FROM runs WHERE id = ?").bind(id),
+    ]);
+    return new Response(null, { status: 204 });
+  }
+
+  return env.ASSETS.fetch(request);
+}
+
+/** Delete data past its retention window. Sources are removed explicitly (not
+ * relying on FK cascade, which D1 does not enforce by default) before their runs. */
+async function purgeExpired(env: Env): Promise<void> {
+  await env.DB.batch([
+    env.DB.prepare(
+      "DELETE FROM sources WHERE run_id IN (SELECT id FROM runs WHERE created_at < datetime('now', '-30 days'))",
+    ),
+    env.DB.prepare("DELETE FROM runs WHERE created_at < datetime('now', '-30 days')"),
+    // Rate-limit rows are keyed by UTC day; anything older than 2 days is dead weight.
+    env.DB.prepare("DELETE FROM rate_limits WHERE day < date('now', '-2 days')"),
+  ]);
+}
 
 function handleResearch(request: Request, env: Env): Response {
   const encoder = new TextEncoder();
@@ -383,10 +506,16 @@ async function runResearch(
     }
   }
 
+  // PII redaction at the persistence boundary: Claude already received the original
+  // `question` in-memory (above) to produce an accurate plan, but only a redacted
+  // copy is written to D1. We do NOT redact `report`: Claude's plan legitimately
+  // contains official phone numbers (e.g. the FTC IdentityTheft line 1-877-438-4338)
+  // that the phone heuristic would otherwise destroy.
+  const storedQuestion = redactPII(question);
   await env.DB.prepare(
     "INSERT INTO runs (id, question, status, report, model) VALUES (?, ?, 'done', ?, ?)",
   )
-    .bind(runId, question, report, MODEL)
+    .bind(runId, storedQuestion, report, MODEL)
     .run();
   if (sources.length > 0) {
     const stmt = env.DB.prepare(

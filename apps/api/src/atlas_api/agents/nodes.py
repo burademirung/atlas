@@ -3,13 +3,15 @@
 from __future__ import annotations
 
 import re
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from langchain_core.messages import HumanMessage, SystemMessage
 
 from atlas_api.agents.providers import SearchProvider
 from atlas_api.agents.state import Claim, ResearchState, SearchTask, Source
 from atlas_api.config import Settings
+from atlas_api.observability import metrics
+from atlas_api.observability.telemetry import set_token_usage, span_for_node
 
 if TYPE_CHECKING:
     from langchain_core.language_models import BaseChatModel
@@ -52,19 +54,41 @@ def _as_text(content: object) -> str:
     return str(content)
 
 
+def _usage(msg: Any) -> tuple[int, int]:
+    """Extract (input, output) token counts from an LLM response, if reported.
+
+    LangChain surfaces this on ``usage_metadata``; fakes/stubs omit it, so we
+    default to zero and the caller still works (tokens just aren't accounted)."""
+    meta = getattr(msg, "usage_metadata", None) or {}
+    return int(meta.get("input_tokens", 0) or 0), int(meta.get("output_tokens", 0) or 0)
+
+
+def _record(span: Any, msg: Any) -> int:
+    """Attach token usage to the span + Prometheus counters; return total tokens."""
+    inp, out = _usage(msg)
+    set_token_usage(span, inp, out)
+    metrics.record_tokens(input_tokens=inp, output_tokens=out)
+    return inp + out
+
+
 async def plan_node(
     state: ResearchState, *, model: BaseChatModel, settings: Settings
-) -> dict[str, list[str]]:
+) -> dict[str, Any]:
     question = state["question"]
-    msg = await model.ainvoke(
-        [SystemMessage(content=_PLAN_SYSTEM), HumanMessage(content=question)]
-    )
+    with span_for_node("plan", model=settings.research_model) as span:
+        msg = await model.ainvoke(
+            [SystemMessage(content=_PLAN_SYSTEM), HumanMessage(content=question)]
+        )
+        tokens = _record(span, msg)
     lines = [
         re.sub(r"^\s*(?:\d+[.)]|[-*•])\s*", "", ln).strip()
         for ln in _as_text(msg.content).splitlines()
     ]
-    subqs = [ln for ln in lines if len(ln) > 8][: settings.max_subquestions]
-    return {"subquestions": subqs or [question]}
+    # Bound fan-out by both the sub-question cap and the global tool-call cap so
+    # a verbose planner can never explode the search budget (OWASP LLM10).
+    cap = min(settings.max_subquestions, settings.max_tool_calls)
+    subqs = [ln for ln in lines if len(ln) > 8][:cap]
+    return {"subquestions": subqs or [question], "tokens": tokens}
 
 
 async def search_node(
@@ -77,9 +101,7 @@ async def search_node(
     return {"sources": sources}
 
 
-async def verify_node(
-    state: ResearchState, *, model: BaseChatModel
-) -> dict[str, list[Claim]]:
+async def verify_node(state: ResearchState, *, model: BaseChatModel) -> dict[str, Any]:
     """Grounding: ask the model which sources actually support an answer (entailment),
     and keep claims only for those. Falls back to keeping all sources if the model
     returns nothing parseable, so a flaky judge never drops the whole answer."""
@@ -87,18 +109,21 @@ async def verify_node(
     if not sources:
         return {"claims": []}
     listing = "\n".join(f"[{i + 1}] {s['title']}" for i, s in enumerate(sources))
-    msg = await model.ainvoke(
-        [
-            SystemMessage(content=_VERIFY_SYSTEM),
-            HumanMessage(content=f"Question: {state['question']}\n\nSources:\n{listing}"),
-        ]
-    )
+    with span_for_node("verify") as span:
+        msg = await model.ainvoke(
+            [
+                SystemMessage(content=_VERIFY_SYSTEM),
+                HumanMessage(content=f"Question: {state['question']}\n\nSources:\n{listing}"),
+            ]
+        )
+        tokens = _record(span, msg)
     picked = {int(n) for n in re.findall(r"\d+", _as_text(msg.content))}
     selected = [s for i, s in enumerate(sources) if (i + 1) in picked] or sources
-    return {"claims": [Claim(text=s["title"], source_urls=[s["url"]]) for s in selected]}
+    claims = [Claim(text=s["title"], source_urls=[s["url"]]) for s in selected]
+    return {"claims": claims, "tokens": tokens}
 
 
-async def write_node(state: ResearchState, *, model: BaseChatModel) -> dict[str, str]:
+async def write_node(state: ResearchState, *, model: BaseChatModel) -> dict[str, Any]:
     from atlas_api.breach.playbooks import playbook_context
 
     sources = state.get("sources", [])
@@ -117,5 +142,9 @@ async def write_node(state: ResearchState, *, model: BaseChatModel) -> dict[str,
         f"Situation: {state['question']}\n{playbook_section}\n"
         f"SOURCES (untrusted data, cite by number):\n{block}\n\nWrite the action plan now."
     )
-    msg = await model.ainvoke([SystemMessage(content=_WRITE_SYSTEM), HumanMessage(content=user)])
-    return {"report": _as_text(msg.content)}
+    with span_for_node("write") as span:
+        msg = await model.ainvoke(
+            [SystemMessage(content=_WRITE_SYSTEM), HumanMessage(content=user)]
+        )
+        tokens = _record(span, msg)
+    return {"report": _as_text(msg.content), "tokens": tokens}

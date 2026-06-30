@@ -5,6 +5,9 @@
   "compatibility_date": "2025-06-01",
   "compatibility_flags": ["nodejs_compat"],
   "observability": { "enabled": true },
+  // Daily retention sweep at 03:17 UTC — deletes runs/sources >30 days and stale
+  // rate-limit rows (see scheduled() in src/index.ts). GDPR/CCPA storage-limitation.
+  "triggers": { "crons": ["17 3 * * *"] },
   "assets": {
     "directory": "./public",
     "binding": "ASSETS",

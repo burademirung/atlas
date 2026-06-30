@@ -15,8 +15,20 @@ from atlas_api.agents.runner import default_provider
 from atlas_api.config import get_settings
 from atlas_api.db.engine import create_engine, session_factory
 from atlas_api.db.models import RunStatus
+from atlas_api.observability import metrics
 from atlas_api.runs import streaming
 from atlas_api.runs.repository import RunRepository
+from atlas_api.security.guardrails import over_token_cap
+
+
+def _data_types(config: dict[str, object] | None) -> list[str]:
+    """Pull the persisted ``data_types`` list off a run's JSONB config, safely."""
+    if not config:
+        return []
+    raw = config.get("data_types")
+    if isinstance(raw, list):
+        return [str(item) for item in raw]
+    return []
 
 
 async def run_research_job(ctx: dict[str, Any], run_id: int) -> dict[str, Any]:
@@ -33,6 +45,7 @@ async def run_research_job(ctx: dict[str, Any], run_id: int) -> dict[str, Any]:
         if run is None:
             return {"status": "missing"}
         question = run.question
+        data_types = _data_types(run.config)
         await repo.set_status(run_id, RunStatus.planning)
         await session.commit()
 
@@ -43,13 +56,18 @@ async def run_research_job(ctx: dict[str, Any], run_id: int) -> dict[str, Any]:
     sources: list[dict[str, str]] = []
     claims: list[dict[str, object]] = []
     report = ""
+    tokens = 0
     cancelled = False
+    truncated = False
 
-    async for update in graph.astream({"question": question}, stream_mode="updates"):
+    async for update in graph.astream(
+        {"question": question, "data_types": data_types}, stream_mode="updates"
+    ):
         if await streaming.is_cancelled(redis, run_id):
             cancelled = True
             break
         for node, payload in update.items():
+            tokens += int(payload.get("tokens", 0) or 0)
             if node == "plan":
                 await streaming.emit(redis, run_id, "status", {"phase": "searching"})
                 await streaming.emit(
@@ -71,19 +89,35 @@ async def run_research_job(ctx: dict[str, Any], run_id: int) -> dict[str, Any]:
                 report = payload.get("report", "")
                 await streaming.emit(redis, run_id, "status", {"phase": "writing"})
                 await streaming.emit(redis, run_id, "report", {"markdown": report})
+        # Per-run denial-of-wallet ceiling: stop spending once the cumulative
+        # token budget is exhausted (OWASP LLM10 / Unbounded Consumption).
+        if over_token_cap(tokens, settings.max_run_tokens):
+            truncated = True
+            break
 
-    final = RunStatus.cancelled if cancelled else RunStatus.done
+    if cancelled:
+        final = RunStatus.cancelled
+    elif truncated:
+        final = RunStatus.truncated
+    else:
+        final = RunStatus.done
     async with maker() as session:
         repo = RunRepository(session)
         await repo.save_results(
-            run_id, status=final, report=report, sources=sources, claims=claims
+            run_id, status=final, report=report, sources=sources, claims=claims, tokens=tokens
         )
         await session.commit()
 
+    event = "done"
+    if cancelled:
+        event = "cancelled"
+    elif truncated:
+        event = "truncated"
     await streaming.emit(
-        redis, run_id, "cancelled" if cancelled else "done", {"id": run_id, "sources": len(sources)}
+        redis, run_id, event, {"id": run_id, "sources": len(sources), "tokens": tokens}
     )
-    return {"status": final.value, "sources": len(sources)}
+    metrics.record_run(final.value)
+    return {"status": final.value, "sources": len(sources), "tokens": tokens}
 
 
 def _build_model(settings: Any) -> Any:

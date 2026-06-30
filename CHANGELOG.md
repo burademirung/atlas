@@ -9,10 +9,54 @@ and this project aims to adhere to [Semantic Versioning](https://semver.org/spec
 
 ### Added
 
-- Comprehensive documentation set: `AGENTS.md`, `CONTRIBUTING.md`, `SECURITY.md`,
-  `CODE_OF_CONDUCT.md`, this changelog, and `docs/` guides (documentation index, development,
-  deployment, API reference, testing, observability, data model, security, agent design, and a
-  documentation-strategy rationale).
+- **Security headers on every response (live edition):** a strict `Content-Security-Policy` plus
+  `Strict-Transport-Security`, `X-Content-Type-Options: nosniff`, `Referrer-Policy`,
+  `Permissions-Policy`, and `X-Frame-Options: DENY` — applied to `/api/*` and the SSE stream via a
+  `withSecurityHeaders()` wrapper in `apps/cloudflare/src/index.ts` and to static assets via a new
+  `public/_headers` file.
+- **PII redaction:** `redact_pii` (`apps/api/.../security/redaction.py`) and `redactPII` (Worker)
+  mask SSNs, Luhn-validated cards, emails, and phone numbers in the breach description **before** it
+  is persisted; a `RedactionFilter` on the root log handler scrubs PII from all logs. The model still
+  receives the original text in-memory; the generated report is intentionally not redacted.
+- **Denial-of-wallet guardrails (production, OWASP LLM10):** `security/guardrails.py` adds a global
+  kill-switch (`service_paused` → 503), per-user (50/day) and per-IP (200/day) Redis daily quotas
+  (429), `Idempotency-Key` dedupe, and a per-run token ceiling (truncates the run). New settings:
+  `service_paused`, `max_output_tokens`, `max_run_tokens`, `max_tool_calls`, `daily_run_quota`,
+  `daily_run_quota_ip`, `idempotency_ttl_seconds`, `trusted_proxy_count`.
+- **30-day retention + self-service erasure (live edition):** a Cloudflare cron (`"17 3 * * *"`) +
+  `scheduled()` handler purges runs/sources older than 30 days and stale rate-limit rows;
+  `DELETE /api/runs/:id` deletes a run + its sources on demand (204).
+- **`data_types` wired end to end (production):** `RunCreateIn.data_types` →
+  `runs/repository.py` (persisted on the run `config`) → `worker.py` → the graph, so breach playbooks
+  are now injected on the `POST /v1/runs` path. `POST /v1/runs` also accepts an `Idempotency-Key`
+  header.
+- **Observability implemented (production):** OpenTelemetry GenAI-semconv tracing
+  (`observability/telemetry.py`, active when `OTEL_EXPORTER_OTLP_ENDPOINT` is set — no-op otherwise),
+  Prometheus RED + run/token metrics (`observability/metrics.py`), and a `/metrics` endpoint. New
+  settings: `otel_exporter_otlp_endpoint`, `otel_service_name`.
+- **Security disclosure:** `apps/cloudflare/public/.well-known/security.txt` (RFC 9116); a privacy
+  note in the live edition `index.html`.
+- **Repo governance:** `LICENSE` (MIT), `.editorconfig`, `.pre-commit-config.yaml` (ruff, hooks,
+  gitleaks), `.github/CODEOWNERS`, a PR template, and three issue templates.
+- **CI:** a coverage gate (`--cov-fail-under=85`), Semgrep SAST, and Bandit (report-only SARIF).
+- **Docs:** new `docs/compliance.md` (privacy & GDPR/CCPA/HIPAA posture); updated `security.md`,
+  `threat-model.md`, `data-model.md`, `observability.md`, and `api-reference.md` to reflect the
+  shipped controls. Earlier: the comprehensive documentation set (`AGENTS.md`, `CONTRIBUTING.md`,
+  `SECURITY.md`, `CODE_OF_CONDUCT.md`, this changelog, and the `docs/` guides).
+
+### Changed
+
+- Threat model and security docs flip denial-of-wallet, missing-CSP, and PII-at-rest from
+  planned/partial to implemented; the data model documents redaction-on-write and the persisted
+  `data_types`; observability moves from "planned" to "implemented" (with the no-op-without-collector
+  caveat for OTel export).
+
+### Security
+
+- **Fixed a HIGH "quota bypass via X-Forwarded-For spoofing" finding.**
+  `client_ip(request, trusted_proxy_count)` now reads the **right-most trusted** XFF hop (appended by
+  the ALB) instead of the attacker-controlled left-most value, so a client can no longer forge a
+  fresh per-IP quota key per request. `trusted_proxy_count` defaults to 1; `0` uses the socket peer.
 
 ### Notes
 
@@ -76,4 +120,3 @@ with its cloud deploy code-complete (IaC + CI/CD).
 
 [Unreleased]: https://github.com/burademirung/atlas/compare/v0.1.0...HEAD
 [0.1.0]: https://github.com/burademirung/atlas/releases/tag/v0.1.0
-</content>

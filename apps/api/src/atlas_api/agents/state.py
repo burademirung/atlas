@@ -1,5 +1,6 @@
 """Graph state + reducers for the research agent."""
 
+import operator
 from typing import Annotated, TypedDict
 
 
@@ -37,6 +38,9 @@ class ResearchState(TypedDict, total=False):
     sources: Annotated[list[Source], merge_sources]
     claims: list[Claim]
     report: str
+    # Cumulative LLM tokens across all supersteps; reduced by addition so the
+    # worker can enforce the per-run denial-of-wallet ceiling (OWASP LLM10).
+    tokens: Annotated[int, operator.add]
 
 
 class SearchTask(TypedDict):

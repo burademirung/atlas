@@ -45,9 +45,10 @@ Get the system running and see the request → stream → cited-report loop end 
 |---|---|
 | [Architecture](architecture.md) | C4 context/container views, the request sequence, and the data model |
 | [Agent design](agent-design.md) | The LangGraph graph, parallel fan-out, the verify node, spotlighting, playbooks, MCP, evals |
-| [Security](security.md) | Defense-in-depth security architecture, mapped to OWASP/NIST |
+| [Security](security.md) | Defense-in-depth security architecture, mapped to OWASP/NIST (headers/CSP, PII redaction, denial-of-wallet) |
 | [Threat model](threat-model.md) | Attack paths + mitigations (prompt injection, denial-of-wallet, XSS, SSRF, authn/z, secrets, PII) |
-| [Observability](observability.md) | Logging, metrics, and tracing plan (implemented vs planned) |
+| [Compliance](compliance.md) | Privacy & compliance posture — GDPR / CCPA / HIPAA, redaction, retention, erasure |
+| [Observability](observability.md) | Logging, metrics, and tracing (implemented: Prometheus + OTel GenAI semconv) |
 | [Cost notes](cost-notes.md) | Cost model for both editions and how to keep dev cheap |
 | [Documentation strategy](documentation-strategy.md) | Why this doc set exists and the standards behind it |
 
@@ -69,4 +70,3 @@ Architecture Decision Records live in [`adr/`](adr/):
 - [`CODE_OF_CONDUCT.md`](../CODE_OF_CONDUCT.md) — Contributor Covenant 2.1
 - [`SECURITY.md`](../SECURITY.md) — vulnerability disclosure policy
 - [`docs/superpowers/specs/`](superpowers/) — the original design spec and implementation plan (historical context)
-</content>

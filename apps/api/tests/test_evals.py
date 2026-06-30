@@ -39,9 +39,7 @@ async def test_eval_harness_scores_and_enforces_invariants() -> None:
 
 async def test_summary_flags_missing_citations() -> None:
     fake = FakeListChatModel(responses=["Sub-q?", VERIFY, "No citations here."])
-    cases = await run_eval(
-        ["Q?"], model=fake, provider=StubSearchProvider(), settings=_settings()
-    )
+    cases = await run_eval(["Q?"], model=fake, provider=StubSearchProvider(), settings=_settings())
     summary = summarize(cases, require_citations=True)
     assert not summary.passed
     assert any("citation" in f for f in summary.failures)

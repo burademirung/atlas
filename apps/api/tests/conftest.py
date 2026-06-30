@@ -2,12 +2,15 @@ from collections.abc import AsyncIterator, Iterator
 
 import pytest
 import pytest_asyncio
+from httpx import ASGITransport, AsyncClient
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession
 from testcontainers.postgres import PostgresContainer
 from testcontainers.redis import RedisContainer
 
+from atlas_api import config
 from atlas_api.db.base import Base
 from atlas_api.db.engine import create_engine, session_factory
+from atlas_api.main import create_app
 
 
 @pytest.fixture(scope="session")
@@ -39,3 +42,18 @@ async def db_session(pg_engine: AsyncEngine) -> AsyncIterator[AsyncSession]:
     async with maker() as session:
         yield session
         await session.rollback()
+
+
+@pytest_asyncio.fixture
+async def app_client(
+    pg_engine: AsyncEngine, redis_url: str, monkeypatch: pytest.MonkeyPatch
+) -> AsyncIterator[AsyncClient]:
+    monkeypatch.setenv("DATABASE_URL", "postgresql+asyncpg://placeholder/db")
+    monkeypatch.setenv("REDIS_URL", redis_url)
+    monkeypatch.setenv("JWT_SECRET", "test-secret-test-secret-test-secret")
+    config.get_settings.cache_clear()
+    app = create_app(engine=pg_engine, redis_url=redis_url)
+    async with app.router.lifespan_context(app):
+        transport = ASGITransport(app=app)
+        async with AsyncClient(transport=transport, base_url="http://t") as client:
+            yield client

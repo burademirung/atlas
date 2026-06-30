@@ -37,6 +37,7 @@ is served from static SPA assets (`ASSETS` binding, SPA fallback).
 | POST | `/api/research` | Run a breach-recovery analysis; **streams SSE** |
 | GET | `/api/runs` | List the 25 most recent runs |
 | GET | `/api/runs/:id` | One run + its sources |
+| DELETE | `/api/runs/:id` | Self-service erasure of a run + its sources (`204`) |
 
 ### `GET /api/health`
 
@@ -85,6 +86,16 @@ the stream has already opened), e.g. `{ "message": "That's a bit long (max 500 c
   "sources": [ { "url": "…", "title": "…", "snippet": "" } ] }
 ```
 
+The stored `question` is **PII-redacted on write** (emails/SSNs/cards/phones masked before the D1
+`INSERT`); the `report` is not redacted. See [data model](data-model.md#cloudflare-d1-live-edition).
+
+### `DELETE /api/runs/:id`
+
+Erases a run and its sources, returning `204 No Content` (idempotent — deleting an unknown id is also
+`204`). No auth: the run id is an unguessable random UUID, so anonymous self-service deletion is
+acceptable. This is the live edition's GDPR Art. 17 / CCPA right-to-delete control; a daily cron also
+auto-purges runs older than 30 days. See [`compliance.md`](compliance.md).
+
 ## Production API (`apps/api`)
 
 All application routes are under `/v1`; health routes are unprefixed. Auth is a Bearer JWT
@@ -99,6 +110,11 @@ obtained from `/v1/auth/login`. Sources:
 |---|---|---|
 | GET | `/healthz` | `{ "status": "ok" }` |
 | GET | `/readyz` | `{ "status": "ready" }` |
+| GET | `/metrics` | Prometheus exposition (`text/plain; version=0.0.4`) |
+
+`/metrics` is unprefixed and **unauthenticated** — RED request metrics plus run-lifecycle and
+LLM-token counters, intended for in-cluster scraping (keep it off the public ingress). See
+[observability §Metrics](observability.md#metrics-implemented).
 
 ### Auth
 
@@ -119,11 +135,42 @@ All require `Authorization: Bearer <access_token>` and are scoped to the calling
 
 | Method | Path | Body | Success | Notes |
 |---|---|---|---|---|
-| POST | `/v1/runs` | `{ "question" }` (3–500 chars) | `202` `RunOut` | enqueues the agent job (idempotent `_job_id=run:<id>`) |
+| POST | `/v1/runs` | `{ "question", "data_types"? }` | `202` `RunOut` | enqueues the agent job (idempotent `_job_id=run:<id>`); honours `Idempotency-Key`; subject to quotas/kill-switch (`429`/`503`) |
 | GET | `/v1/runs` | — | `200` `RunOut[]` | the caller's runs |
 | GET | `/v1/runs/{id}` | — | `200` `RunDetailOut` | 404 if not owned/found |
 | POST | `/v1/runs/{id}/cancel` | — | `202` | sets the Redis cancel flag |
 | GET | `/v1/runs/{id}/events` | — (supports `Last-Event-ID`) | `200` `text/event-stream` | replay + live tail |
+
+> **No `DELETE /v1/runs/{id}` yet.** The production edition has no self-service run-deletion endpoint;
+> erasure relies on `ON DELETE CASCADE` from `users`. (The **live Worker** does expose
+> `DELETE /api/runs/:id`.) A prod deletion endpoint + retention purge are planned — see
+> [`compliance.md`](compliance.md).
+
+#### `POST /v1/runs` request body & headers
+
+```jsonc
+// RunCreateIn
+{ "question": "My SSN was in a healthcare breach. What now?",  // required, 3–500 chars
+  "data_types": ["ssn", "medical"] }                            // optional, ≤ 16 entries, default []
+```
+
+- `data_types` — leaked-data categories; each maps to a curated **breach playbook** injected into the
+  agent's writer node. Persisted on the run's `config` JSONB and read by the worker, so playbooks are
+  now wired **end to end on the production path** (`schemas` → `repository` → `worker` → graph).
+  Backward-compatible: omitting it behaves as before.
+- `Idempotency-Key` (request header, optional) — a retried or double-clicked submission with the same
+  key returns the **original** run instead of starting (and billing) a second one. The key dedupes for
+  `idempotency_ttl_seconds` (default 24 h).
+
+**Denial-of-wallet responses** ([`security/guardrails.py`](../apps/api/src/atlas_api/security/guardrails.py)):
+
+| Status | When |
+|---|---|
+| `503` | Global kill-switch engaged (`service_paused`) — run submission paused by an operator |
+| `429` | Daily quota exceeded — per-user (`daily_run_quota`, default 50) **or** per-IP (`daily_run_quota_ip`, default 200); counters reset at 00:00 UTC |
+
+Both are returned as RFC-9457 problem responses. A run that exhausts the per-run token ceiling
+(`max_run_tokens`) is not rejected but ends with `status: "truncated"` and a partial report.
 
 Schemas ([`runs/schemas.py`](../apps/api/src/atlas_api/runs/schemas.py)):
 
@@ -137,15 +184,9 @@ Schemas ([`runs/schemas.py`](../apps/api/src/atlas_api/runs/schemas.py)):
   "sources": [ { "url": "…", "title": "… | null", "snippet": "… | null" } ] }
 ```
 
-`status` is one of the `run_status` values: `queued`, `planning`, `searching`, `verifying`,
-`writing`, `done`, `cancelled`, `failed`, `truncated`
-([`db/models.py`](../apps/api/src/atlas_api/db/models.py)).
-
-> **Note (honest):** `POST /v1/runs` accepts only `question` today — there is no `data_types` field
-> on the production request schema, and the arq worker invokes the graph without `data_types`, so
-> the breach playbooks are not injected on the production run path yet (they *are* wired into the
-> agent's `write_node`, the runner, and the MCP server). See
-> [agent design](agent-design.md#breach-playbooks-as-a-context-layer).
+The stored/returned `question` is **PII-redacted on write** (masked before persistence). `status` is
+one of the `run_status` values: `queued`, `planning`, `searching`, `verifying`, `writing`, `done`,
+`cancelled`, `failed`, `truncated` ([`db/models.py`](../apps/api/src/atlas_api/db/models.py)).
 
 ### Consuming the production SSE stream
 
@@ -192,4 +233,3 @@ The production API returns RFC-9457-style problem responses (no stack-trace leak
 handler ([`errors.py`](../apps/api/src/atlas_api/errors.py)); the web client reads the `title`
 field. The live Worker returns `{ "error": "…" }` JSON for non-streaming routes and SSE `error`
 events for the streaming route.
-</content>

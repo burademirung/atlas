@@ -8,6 +8,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from atlas_api.db.models import Claim, ClaimSource, Report, ResearchRun, RunStatus, Source
+from atlas_api.security.redaction import redact_pii
 
 
 def _url_hash(url: str) -> str:
@@ -18,8 +19,19 @@ class RunRepository:
     def __init__(self, session: AsyncSession) -> None:
         self._session = session
 
-    async def create(self, user_id: int, question: str) -> ResearchRun:
-        run = ResearchRun(user_id=user_id, question=question, status=RunStatus.queued)
+    async def create(
+        self, user_id: int, question: str, data_types: list[str] | None = None
+    ) -> ResearchRun:
+        # PII is stripped *before* the breach description is persisted: the
+        # stored question drives advice, which never needs the literal
+        # identifier (OWASP ASVS V8.3, OWASP LLM02, NIST SP 800-122).
+        config: dict[str, object] = {"data_types": list(data_types or [])}
+        run = ResearchRun(
+            user_id=user_id,
+            question=redact_pii(question),
+            status=RunStatus.queued,
+            config=config,
+        )
         self._session.add(run)
         await self._session.flush()
         return run

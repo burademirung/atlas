@@ -1,15 +1,17 @@
 # Observability
 
-> The logging, metrics, and tracing plan for Firstline / Atlas — **honest about what is implemented
-> vs planned.** Logging is implemented; metrics and tracing are scaffolded for the production edition.
+> The logging, metrics, and tracing setup for Firstline / Atlas — **honest about what is implemented
+> vs planned.** Logging, request correlation, **Prometheus metrics**, and **OpenTelemetry tracing
+> (GenAI semconv)** are now implemented in the production edition; dashboards, SLOs, and alerting are
+> the remaining work.
 
 ## Table of contents
 
 - [Status at a glance](#status-at-a-glance)
 - [Logging (implemented)](#logging-implemented)
 - [Request correlation (implemented)](#request-correlation-implemented)
-- [Metrics (planned)](#metrics-planned)
-- [Tracing (planned)](#tracing-planned)
+- [Metrics (implemented)](#metrics-implemented)
+- [Tracing (implemented)](#tracing-implemented)
 - [The live edition](#the-live-edition)
 - [What to instrument next](#what-to-instrument-next)
 
@@ -17,10 +19,10 @@
 
 | Signal | Production edition | Live (Cloudflare) edition |
 |---|---|---|
-| Structured logs | ✅ implemented (JSON to stdout) | ✅ Workers observability enabled |
+| Structured logs | ✅ implemented (JSON to stdout, **PII-redacted**) | ✅ Workers observability enabled |
 | Request correlation | ✅ `X-Request-ID` middleware | n/a (one Worker per request) |
-| Metrics (Prometheus) | 📋 planned — chart scaffolding only, no `/metrics` in app code | — |
-| Tracing (OpenTelemetry) | 📋 planned — env hook only, no instrumentation in code | — |
+| Metrics (Prometheus) | ✅ implemented — `/metrics` endpoint + RED + run/token counters | — |
+| Tracing (OpenTelemetry) | ✅ implemented — GenAI semconv spans, **no-op without an OTLP collector** | — |
 | Run-level telemetry | ✅ persisted to `run_steps` (tokens, latency_ms, payload) | partial (D1 `runs.tokens`) |
 
 Legend: ✅ implemented · 📋 planned/scaffolded.
@@ -35,9 +37,12 @@ platform to collect ([`logging.py`](../apps/api/src/atlas_api/logging.py)):
 ```
 
 `configure_logging()` installs a single stdout handler with a JSON formatter at `INFO` and is
-called from the app factory ([`main.py`](../apps/api/src/atlas_api/main.py)). On EKS, pod stdout is
-collected by the platform's log pipeline (e.g. Fluent Bit → CloudWatch); this chart does not bundle
-a log shipper.
+called from the app factory ([`main.py`](../apps/api/src/atlas_api/main.py)). It also attaches a
+**`RedactionFilter`** ([`security/redaction.py`](../apps/api/src/atlas_api/security/redaction.py)) to
+the handler, so every log record is scrubbed of PII (SSNs, cards, emails, phones) before it is
+emitted — a breach description in a message or stack trace never reaches a log sink (OWASP LLM02). On
+EKS, pod stdout is collected by the platform's log pipeline (e.g. Fluent Bit → CloudWatch); this
+chart does not bundle a log shipper.
 
 Errors are returned as RFC-9457-style problem responses **without stack-trace leakage**
 ([`errors.py`](../apps/api/src/atlas_api/errors.py)) — a security property as much as an
@@ -48,44 +53,56 @@ observability one.
 [`middleware.py`](../apps/api/src/atlas_api/middleware.py) attaches a request id to every request:
 it reads an inbound `X-Request-ID` or generates a UUID, stores it on `request.state.request_id`, and
 echoes it back on the response header. This is the correlation key that ties together the log lines
-for one request (and is the seam where per-request log enrichment / PII redaction would attach).
+for one request.
 
-## Metrics (planned)
+## Metrics (implemented)
 
-The Helm chart is **scaffolded** for Prometheus RED metrics but the application does **not yet
-expose a `/metrics` endpoint**. In [`values.yaml`](../infra/k8s/atlas/values.yaml):
+The FastAPI app **serves Prometheus metrics at `/metrics`**
+([`observability/metrics.py`](../apps/api/src/atlas_api/observability/metrics.py), wired in
+[`main.py`](../apps/api/src/atlas_api/main.py) via `app.add_route("/metrics", …)`). The endpoint
+returns the Prometheus exposition format from `prometheus_client.generate_latest()` and is
+unauthenticated (intended for in-cluster scraping; keep it off the public ingress). The chart's
+scrape annotations in [`values.yaml`](../infra/k8s/atlas/values.yaml) (`metrics.enabled`,
+`metrics.path: /metrics`, `metrics.port`) now point at a live endpoint.
 
-```yaml
-metrics:
-  enabled: true
-  path: /metrics
-  port: 8080
-```
+Exposed series:
 
-This drives annotation-based Prometheus scrape discovery, but until the FastAPI app actually serves
-`/metrics` (e.g. via `prometheus-client` / an ASGI instrumentator), scraping returns nothing. The
-API CPU HPA relies on **metrics-server** (a cluster prerequisite), which is independent of
-Prometheus. Worker autoscaling is driven by KEDA reading **Redis queue depth**, not app metrics.
+| Metric | Type | Labels | Signal |
+|---|---|---|---|
+| `atlas_http_requests_total` | counter | `method`, `path`, `status` | RED — rate + errors |
+| `atlas_http_request_duration_seconds` | histogram | `method`, `path` | RED — duration |
+| `atlas_runs_total` | counter | `outcome` (`done`/`cancelled`/`truncated`/…) | run lifecycle |
+| `atlas_run_tokens_total` | counter | `kind` (`input`/`output`) | **denial-of-wallet spend signal** |
 
-Useful run-level telemetry **is** already captured in the database: `run_steps` rows record per-step
-`agent`, `phase`, `status`, `tokens`, `latency_ms`, and a `payload`
-([`db/models.py`](../apps/api/src/atlas_api/db/models.py)) — a foundation a `/metrics` exporter or a
-dashboard could aggregate.
+The `observe_request` middleware records request rate/errors/latency for every request, keyed on the
+**matched route template** (low cardinality, not the raw path). `record_run()` is incremented by the
+worker at each terminal outcome ([`worker.py`](../apps/api/src/atlas_api/worker.py)); the token
+counter is the cost signal that the denial-of-wallet guardrails (see
+[security](security.md#denial-of-wallet-guardrails)) can be alerted on. The API CPU HPA still relies
+on **metrics-server**, and worker autoscaling on **KEDA / Redis queue depth** — both independent of
+Prometheus. Per-step telemetry also persists to `run_steps` (tokens, latency_ms, payload).
 
-## Tracing (planned)
+## Tracing (implemented)
 
-Distributed tracing with **OpenTelemetry** is planned for the production edition. The only wiring
-present today is a commented env hook in the chart:
+Distributed tracing uses **OpenTelemetry** with the
+[GenAI semantic conventions](https://opentelemetry.io/docs/specs/semconv/gen-ai/)
+([`observability/telemetry.py`](../apps/api/src/atlas_api/observability/telemetry.py)).
+`setup_telemetry()` is called from the app lifespan
+([`main.py`](../apps/api/src/atlas_api/main.py)); `span_for_node()` opens a span per agent-graph node
+(`agent.<node>`) carrying `gen_ai.system`, `gen_ai.operation.name`, `gen_ai.request.model`, and the
+`gen_ai.usage.{input,output}_tokens` counters.
+
+**Important — no-op without a collector.** Real exporting activates **only when
+`OTEL_EXPORTER_OTLP_ENDPOINT` is configured** (and the OTel SDK is installed). With no endpoint, the
+OpenTelemetry API falls back to a **no-op tracer**: spans are created but not recorded or exported,
+so instrumented paths are zero-overhead and never break offline or in tests. To turn it on, point the
+endpoint at a collector (e.g. AWS Distro for OpenTelemetry):
 
 ```yaml
 # app.extraEnv:
 #   OTEL_EXPORTER_OTLP_ENDPOINT: http://adot-collector.observability:4317
+#   OTEL_SERVICE_NAME: atlas-api
 ```
-
-No OTel SDK or instrumentation is in the application code yet. When added, agent/LLM spans should
-follow the [OpenTelemetry GenAI semantic conventions](https://opentelemetry.io/docs/specs/semconv/gen-ai/)
-(model, token counts, tool calls, latency per node) so the plan → search → verify → write graph is
-observable end to end, exported to an OTLP collector (e.g. AWS Distro for OpenTelemetry).
 
 ## The live edition
 
@@ -102,15 +119,18 @@ live-edition activity.
 
 ## What to instrument next
 
-In rough priority order (all 📋 planned):
+The signal plumbing (logs, RED metrics, GenAI traces, PII redaction) is in place; the remaining work
+is turning signals into operations (all 📋 planned):
 
-1. Expose `/metrics` (RED metrics: request rate, errors, duration) so the chart's Prometheus
-   scrape becomes live.
-2. Per-provider **cost/token meters** with alerting — directly relevant to the denial-of-wallet
-   risk (see [threat model](threat-model.md#2-denial-of-wallet--unbounded-consumption-owasp-llm10)
-   and [cost notes](cost-notes.md)).
-3. OpenTelemetry tracing across the API → worker → graph path using the GenAI semconv.
-4. **PII redaction** in logs/traces for questions, `run_steps.payload`, and fetched content before
-   any of the above ships (see [security](security.md) / threat model A08/A09).
-5. Security **alerting** on auth-failure spikes, budget breach, and egress NetworkPolicy denials.
-</content>
+1. **Deploy a collector + dashboards.** Stand up an OTLP collector (ADOT) and a Prometheus/Grafana
+   (or CloudWatch) stack, then build dashboards for the RED signals and the
+   `atlas_run_tokens_total` spend curve. OTel export is a no-op until the collector exists.
+2. **SLOs + alerting.** Define latency/error SLOs on the RED metrics and **cost alerting** on the
+   token counter — directly relevant to the denial-of-wallet risk (see
+   [threat model](threat-model.md#2-denial-of-wallet--unbounded-consumption-owasp-llm10) and
+   [cost notes](cost-notes.md)). Add security alerting on auth-failure spikes, kill-switch
+   activation / quota breaches, and egress NetworkPolicy denials.
+3. **Extend tracing coverage** beyond the per-node spans to the full API → worker → graph path
+   (context propagation across the arq boundary) and attach `run_steps.payload` selectively.
+4. **Live-edition metrics.** Surface Worker request/error/cost counters (Workers Analytics Engine)
+   to match the production RED signals.

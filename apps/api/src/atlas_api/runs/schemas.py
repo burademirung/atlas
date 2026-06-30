@@ -5,6 +5,10 @@ from pydantic import BaseModel, ConfigDict, Field
 
 class RunCreateIn(BaseModel):
     question: str = Field(min_length=3, max_length=500)
+    # Leaked data categories (e.g. ["ssn", "financial"]); each maps to a curated
+    # breach playbook injected into the agent's writer node. Defaults to empty so
+    # the field is fully backward-compatible with existing clients.
+    data_types: list[str] = Field(default_factory=list, max_length=16)
 
 
 class RunOut(BaseModel):

@@ -167,4 +167,3 @@ helm template atlas infra/k8s/atlas -n atlas | head
 ```
 
 More detail in [`docs/testing.md`](testing.md).
-</content>

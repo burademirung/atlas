@@ -1,0 +1,21 @@
+# CODEOWNERS — default reviewers for pull requests.
+# Docs: https://docs.github.com/articles/about-code-owners
+# Order matters: the last matching pattern takes precedence.
+
+# Default owner for everything in the repo.
+*                       @burademirung
+
+# Infrastructure (Terraform, Helm, deploy config).
+/infra/                 @burademirung
+
+# Python API service.
+/apps/api/              @burademirung
+
+# Cloudflare Worker edition.
+/apps/cloudflare/       @burademirung
+
+# Web frontend.
+/apps/web/              @burademirung
+
+# CI/CD and repo governance.
+/.github/               @burademirung

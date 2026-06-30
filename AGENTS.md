@@ -59,8 +59,12 @@ Every top-level directory, one line each (real paths):
 
 Inside `apps/api/src/atlas_api/`: `agents/` (LangGraph graph/nodes/providers/runner),
 `breach/` (playbooks + laws + HIBP), `auth/` (JWT + argon2id), `db/` (SQLAlchemy 2.0 models),
-`runs/` (router, repository, Redis-Stream SSE), `evals/` (eval harness), `users/`, `health/`,
-`migrations/` (Alembic), `mcp_server.py` (FastMCP), `worker.py` (arq `WorkerSettings`).
+`runs/` (router, repository, Redis-Stream SSE), `security/` (**`redaction.py`** PII masking +
+log filter, **`guardrails.py`** denial-of-wallet kill-switch/quotas/idempotency/token-cap +
+spoof-resistant `client_ip`), `observability/` (**`metrics.py`** Prometheus RED + run/token counters
+and the `/metrics` endpoint, **`telemetry.py`** OpenTelemetry GenAI-semconv spans), `evals/` (eval
+harness), `users/`, `health/`, `migrations/` (Alembic), `mcp_server.py` (FastMCP), `worker.py` (arq
+`WorkerSettings`).
 
 ## Per-app build / run / test commands
 
@@ -69,6 +73,7 @@ Inside `apps/api/src/atlas_api/`: `agents/` (LangGraph graph/nodes/providers/run
 ```bash
 cd apps/api
 uv sync --all-groups                          # install (incl. dev group)
+pre-commit install                            # one-time: enable the repo's pre-commit hooks
 uv run ruff check . && uv run ruff format --check .   # lint + format
 uv run mypy src                               # strict type-check
 uv run pytest                                 # tests (testcontainers spin up Postgres/Redis)
@@ -168,11 +173,34 @@ per run**. Do not weaken these controls; if you touch them, keep them at least a
   [`apps/cloudflare/src/index.ts`](apps/cloudflare/src/index.ts). Keep grounding sources authoritative.
 - **Cost/abuse caps.** Per-run caps (question ≤ 500 chars, `web_search max_uses: 5`,
   `max_tokens: 6000`; production `max_subquestions` × `max_sources_per_q`) bound spend. Don't remove them.
+- **Denial-of-wallet guardrails (production).** `POST /v1/runs` is wrapped by
+  [`security/guardrails.py`](apps/api/src/atlas_api/security/guardrails.py): a kill-switch
+  (`service_paused` → 503), per-user/per-IP daily quotas (429), `Idempotency-Key` dedupe, and a
+  per-run token ceiling (`max_run_tokens`). **Do not add unbounded or un-quota'd LLM/tool calls**, and
+  keep these checks on any new run-creating path. The per-IP key comes from
+  `client_ip(request, trusted_proxy_count)`, which reads the **right-most trusted** X-Forwarded-For
+  hop — never trust the left-most (attacker-controlled) value.
+- **PII redaction.** Breach descriptions are masked **before** persistence (`redact_pii` in
+  [`security/redaction.py`](apps/api/src/atlas_api/security/redaction.py),
+  `redactPII` in the Worker) and a `RedactionFilter` scrubs all logs. **Never log raw request text or
+  bypass `redact_pii` when writing the `question`**; do not remove the log filter. The `report` is
+  deliberately left un-redacted (official phone numbers) — keep it that way.
 - **Tenant isolation.** Every `{id}` run endpoint goes through `get_for_user(run_id, user_id)`;
   non-owners get 404. Any new run endpoint must filter by `user_id`.
 - **JWT hygiene (RFC 8725).** Decoding uses an algorithm allowlist + required claims; don't relax it.
+- **Edge security headers.** The live Worker sets a strict CSP + HSTS/nosniff/etc. on every response
+  (`withSecurityHeaders()` + `public/_headers`). Keep them; don't add `'unsafe-inline'` to
+  `script-src`.
 
-Full picture: [`docs/security.md`](docs/security.md) and [`docs/threat-model.md`](docs/threat-model.md).
+**Relevant settings** (read [`config.py`](apps/api/src/atlas_api/config.py); set via env): the
+guardrail knobs `service_paused`, `max_output_tokens`, `max_run_tokens`, `max_tool_calls`,
+`daily_run_quota`, `daily_run_quota_ip`, `idempotency_ttl_seconds`, `trusted_proxy_count`, and the
+observability knobs `otel_exporter_otlp_endpoint`, `otel_service_name` (OTel export is a no-op until
+an endpoint is set). The `/metrics` Prometheus endpoint is unauthenticated — keep it off the public
+ingress.
+
+Full picture: [`docs/security.md`](docs/security.md), [`docs/threat-model.md`](docs/threat-model.md),
+and [`docs/compliance.md`](docs/compliance.md).
 
 ## Where NOT to edit
 
@@ -192,5 +220,3 @@ A change is done when, for every app you touched:
 - `apps/web`: `npm run build` passes.
 - `infra`: `terraform fmt -check` + `terraform validate` (and `helm template` renders) pass.
 - Commits follow Conventional Commits; no secrets added; security guardrails above intact.
-</content>
-</invoke>

@@ -128,4 +128,3 @@ hard architectural choices are frozen as ADRs. Where the product is honest about
 **code-complete but not fully wired** (e.g. some observability, RLS, the React app vs the live
 vanilla SPA), the docs say "planned" rather than overclaiming — itself a documentation principle
 for a trustworthy security product.
-</content>

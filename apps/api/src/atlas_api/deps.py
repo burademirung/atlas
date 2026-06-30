@@ -30,9 +30,7 @@ def get_token_service(request: Request, redis: Redis = Depends(get_redis)) -> To
     return TokenService(request.app.state.settings, redis)
 
 
-def get_user_service(
-    request: Request, session: AsyncSession = Depends(get_session)
-) -> UserService:
+def get_user_service(request: Request, session: AsyncSession = Depends(get_session)) -> UserService:
     return UserService(UserRepository(session), request.app.state.hasher)
 
 
