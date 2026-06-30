@@ -91,6 +91,29 @@ body {
 .hero em { font-style: italic; font-weight: 400; color: var(--gold); }
 .lede { color: var(--ink-dim); font-size: 16px; line-height: 1.6; max-width: 620px; margin: 0 0 26px; }
 
+.ask-block { display: flex; flex-direction: column; gap: 12px; }
+
+/* data-type chips — "what was exposed?" toggle pills */
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  color: var(--ink-dim);
+  border-radius: 999px;
+  padding: 7px 14px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s, background 0.15s, box-shadow 0.15s;
+}
+.chip:hover { color: var(--ink); border-color: var(--gold-soft); }
+.chip.active {
+  background: linear-gradient(180deg, #c79544, #ad7726);
+  border-color: var(--gold);
+  color: #fff;
+  box-shadow: 0 0 0 3px rgba(176, 125, 43, 0.12);
+}
+
 .ask {
   display: flex;
   gap: 10px;
@@ -131,14 +154,27 @@ body {
 #run:disabled { opacity: 0.5; cursor: progress; filter: grayscale(0.4); }
 #run .arrow { font-size: 17px; }
 
-.examples { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+.disclaimer {
+  color: var(--ink-faint);
+  font-size: 12.5px;
+  line-height: 1.5;
+  margin: 12px 0 0;
+  max-width: 620px;
+  border-left: 2px solid var(--gold-soft);
+  padding-left: 12px;
+}
+
+.examples { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 18px; flex-direction: column; align-items: flex-start; }
 .examples button {
   background: transparent;
   border: 1px solid var(--line);
   color: var(--ink-dim);
-  border-radius: 999px;
-  padding: 7px 13px;
+  border-radius: 12px;
+  padding: 9px 14px;
   font-size: 13px;
+  line-height: 1.4;
+  text-align: left;
+  max-width: 620px;
   cursor: pointer;
   transition: color 0.15s, border-color 0.15s;
 }
@@ -283,6 +319,23 @@ body {
 .report p { margin: 0.7em 0; }
 .report ul, .report ol { padding-left: 1.3em; margin: 0.6em 0; }
 .report li { margin: 0.3em 0; }
+/* breach-response checklist items: "- [ ] step" rendered with a checkbox glyph */
+.report li.task {
+  list-style: none;
+  margin-left: -1.3em;
+  padding-left: 0;
+  display: flex;
+  gap: 0.55em;
+  align-items: baseline;
+}
+.report li.task .box {
+  color: var(--gold);
+  font-size: 1.05em;
+  flex: none;
+  line-height: 1.2;
+}
+.report li.task.done { color: var(--ink-dim); }
+.report li.task.done .box { color: var(--green); }
 .report strong { color: #000; }
 .report a { color: var(--blue); }
 .report .cite {

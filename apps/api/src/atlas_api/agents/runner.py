@@ -26,6 +26,7 @@ def default_provider(settings: Settings) -> SearchProvider:
 async def run_research(
     question: str,
     *,
+    data_types: list[str] | None = None,
     model: BaseChatModel | None = None,
     provider: SearchProvider | None = None,
     settings: Settings | None = None,
@@ -37,5 +38,5 @@ async def run_research(
         model = build_chat_model(settings)
     provider = provider or default_provider(settings)
     graph = build_graph(model=model, provider=provider, settings=settings)
-    result = await graph.ainvoke({"question": question})
+    result = await graph.ainvoke({"question": question, "data_types": data_types or []})
     return cast(ResearchState, result)

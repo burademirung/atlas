@@ -1,9 +1,9 @@
-"""Fixed evaluation question set."""
+"""Fixed evaluation question set — realistic breach situations."""
 
 EVAL_QUESTIONS: list[str] = [
-    "What is the EU AI Act and when does it take effect?",
-    "How do mRNA vaccines work?",
-    "What caused the 2008 financial crisis?",
-    "What are the main approaches to carbon capture?",
-    "How does the Raft consensus algorithm work?",
+    "My passwords showed up in a data breach notification. What should I do?",
+    "Someone has my Social Security number. How do I protect myself?",
+    "My email account was hacked — what steps should I take?",
+    "My bank says my debit card number was exposed. What now?",
+    "Our company database with customer data was breached. What are our obligations?",
 ]

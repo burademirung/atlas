@@ -3,10 +3,10 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Atlas — Deep Research Studio</title>
+    <title>Firstline — Breach Response</title>
     <meta
       name="description"
-      content="Atlas runs a research agent that plans, searches the live web, and streams a cited report — Claude Opus 4.8 on Cloudflare Workers."
+      content="Your data was leaked? Firstline gives you a calm, prioritized, step-by-step plan grounded in official guidance (FTC, CISA, the credit bureaus) — Claude Opus 4.8 on Cloudflare Workers."
     />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -33,8 +33,8 @@
     <header class="topbar">
       <div class="brand">
         <span class="mark">◆</span>
-        <span class="name">ATLAS</span>
-        <span class="sub">Deep Research Studio</span>
+        <span class="name">FIRSTLINE</span>
+        <span class="sub">Breach Response</span>
       </div>
       <div class="meta">
         <a class="pill ghost" href="#how">How it works ↓</a>
@@ -46,41 +46,59 @@
     <main class="layout">
       <section class="composer">
         <h1 class="hero">
-          Ask anything.<br /><em>Get a cited answer,</em> watched live.
+          Your data was leaked?<br /><em>Here's exactly what to do.</em>
         </h1>
         <p class="lede">
-          A multi-agent pipeline decomposes your question, retrieves grounded sources, and
-          streams a verified, cited report — running entirely on Cloudflare's edge.
+          Take a breath — a breach is a manageable event, not a defining moment. Tell us what
+          happened and what was exposed, and you'll get a calm, prioritized, step-by-step plan
+          grounded in official guidance from the FTC, CISA, and the credit bureaus. Recovery is a
+          marathon, not a sprint, and we'll show you where to start. This is general guidance, not
+          legal advice.
         </p>
 
-        <form id="form" class="ask">
-          <textarea
-            id="q"
-            rows="2"
-            maxlength="500"
-            placeholder="e.g. How did the printing press change information access in Europe?"
-          ></textarea>
-          <button id="run" type="submit">
-            <span class="lbl">Run research</span>
-            <span class="arrow">→</span>
-          </button>
+        <form id="form" class="ask-block">
+          <div class="chips" id="dataTypes" role="group" aria-label="What data was exposed?">
+            <button type="button" class="chip" data-type="Passwords">Passwords</button>
+            <button type="button" class="chip" data-type="Email account">Email account</button>
+            <button type="button" class="chip" data-type="Bank / card">Bank / card</button>
+            <button type="button" class="chip" data-type="Social Security number">Social Security number</button>
+            <button type="button" class="chip" data-type="Medical records">Medical records</button>
+            <button type="button" class="chip" data-type="Driver's license">Driver's license</button>
+            <button type="button" class="chip" data-type="Company / customer data">Company / customer data</button>
+          </div>
+          <div class="ask">
+            <textarea
+              id="q"
+              rows="2"
+              maxlength="500"
+              placeholder="Tell me what happened — e.g. 'my passwords showed up in a data breach' or 'someone has my Social Security number'"
+            ></textarea>
+            <button id="run" type="submit">
+              <span class="lbl">Get my plan</span>
+              <span class="arrow">→</span>
+            </button>
+          </div>
           <div id="turnstile" class="turnstile" hidden></div>
         </form>
+        <p class="disclaimer">
+          General guidance, not legal or financial advice. For a serious incident, contact your
+          bank, an attorney, or an incident-response firm.
+        </p>
         <div class="examples" id="examples">
-          <button>What is the EU AI Act and who does it affect?</button>
-          <button>How do mRNA vaccines work?</button>
-          <button>Why did the Roman Republic fall?</button>
+          <button>I got a breach notice from a company I have an account with, and my password and email were exposed.</button>
+          <button>My bank card numbers showed up in a data breach and I'm seeing charges I don't recognize.</button>
+          <button>Someone has my Social Security number — I think my identity may be stolen.</button>
         </div>
       </section>
 
       <section class="stage" id="stage" hidden>
         <div class="pipeline">
-          <h3 class="panel-title">Agent pipeline</h3>
+          <h3 class="panel-title">Response pipeline</h3>
           <ol class="stages" id="stages">
-            <li data-phase="planning"><span class="dot"></span><span class="t">Planner</span></li>
-            <li data-phase="searching"><span class="dot"></span><span class="t">Searchers</span></li>
-            <li data-phase="verifying"><span class="dot"></span><span class="t">Verify / ground</span></li>
-            <li data-phase="writing"><span class="dot"></span><span class="t">Writer</span></li>
+            <li data-phase="planning"><span class="dot"></span><span class="t">Triage</span></li>
+            <li data-phase="searching"><span class="dot"></span><span class="t">Find official guidance</span></li>
+            <li data-phase="verifying"><span class="dot"></span><span class="t">Assess urgency</span></li>
+            <li data-phase="writing"><span class="dot"></span><span class="t">Action plan</span></li>
           </ol>
           <div class="subqs" id="subqs"></div>
           <h3 class="panel-title src-title">Sources <span class="count" id="srcCount">0</span></h3>
@@ -93,7 +111,7 @@
             <span class="qecho" id="qecho"></span>
           </div>
           <article class="report" id="report">
-            <div class="placeholder">The report will stream here, token by token.</div>
+            <div class="placeholder">Your action plan will stream here, step by step.</div>
           </article>
         </div>
       </section>
@@ -108,10 +126,11 @@
     <div class="explain" id="how">
       <div class="ex-lead">
         <p class="ex-eyebrow">A guided tour</p>
-        <h2 class="ex-title">How a question becomes <em>a cited answer.</em></h2>
+        <h2 class="ex-title">How a scary breach becomes <em>a clear plan.</em></h2>
         <p class="ex-lede">
-          Atlas reads the live web, reasons over what it finds, and writes back a sourced report — in
-          seconds. Here is exactly what happens in between, one moving part at a time.
+          Firstline reads the official guidance, reasons over what applies to your situation, and
+          writes back a calm, prioritized, cited action plan — in seconds. Here is exactly what
+          happens in between, one moving part at a time.
         </p>
       </div>
 
@@ -124,33 +143,33 @@
         <div class="cast-grid">
           <article class="cast-card" style="--i: 0">
             <div class="cc-ico">🧭</div><h4>Your browser</h4>
-            <p class="analogy">The person at the counter who places the order.</p>
-            <p class="tech">Sends your question, then shows the answer as it streams in.</p>
+            <p class="analogy">The person who walks in and says "here's what happened."</p>
+            <p class="tech">Sends your situation, then shows your plan as it streams in.</p>
           </article>
           <article class="cast-card" style="--i: 1">
             <div class="cc-ico">🛰️</div><h4>Cloudflare Worker</h4>
-            <p class="analogy">A receptionist with a desk in 300+ cities at once.</p>
+            <p class="analogy">A calm front desk with a presence in 300+ cities at once.</p>
             <p class="tech">Code at the network edge, nearest to you. Routes the request.</p>
           </article>
           <article class="cast-card" style="--i: 2">
             <div class="cc-ico">🧠</div><h4>Claude Opus 4.8</h4>
-            <p class="analogy">The researcher who actually reads and reasons.</p>
-            <p class="tech">The AI model. Decides what to look up, then writes the report.</p>
+            <p class="analogy">The breach-response analyst who triages and advises.</p>
+            <p class="tech">The AI model. Decides what to check, then writes your plan.</p>
           </article>
           <article class="cast-card" style="--i: 3">
             <div class="cc-ico">🔎</div><h4>Web search tool</h4>
-            <p class="analogy">The researcher's library card.</p>
-            <p class="tech">Lets Claude look things up live and bring back real sources.</p>
+            <p class="analogy">A reference desk limited to the official shelf.</p>
+            <p class="tech">Reads only official guidance — FTC, CISA, the credit bureaus.</p>
           </article>
           <article class="cast-card" style="--i: 4">
             <div class="cc-ico">📡</div><h4>Live stream (SSE)</h4>
-            <p class="analogy">A radio broadcast — you hear it forming, word by word.</p>
+            <p class="analogy">Someone reading you the plan as they write it, step by step.</p>
             <p class="tech">Server-Sent Events push each update instead of making you wait.</p>
           </article>
           <article class="cast-card" style="--i: 5">
             <div class="cc-ico">🗄️</div><h4>D1 database</h4>
-            <p class="analogy">The filing cabinet where finished reports are kept.</p>
-            <p class="tech">Cloudflare's edge SQL store. Every run is saved for later.</p>
+            <p class="analogy">The folder that keeps your plan so you can come back to it.</p>
+            <p class="tech">Cloudflare's edge SQL store. Every plan is saved for later.</p>
           </article>
         </div>
       </section>
@@ -159,8 +178,8 @@
       <section class="ex-journey">
         <div class="ex-head center">
           <p class="ex-eyebrow">The journey</p>
-          <h3>Follow one question through the machine</h3>
-          <p class="ex-sub">Watch the request travel. Scroll, or step through it yourself.</p>
+          <h3>Follow one breach through the machine</h3>
+          <p class="ex-sub">Watch your situation travel. Scroll, or step through it yourself.</p>
         </div>
 
         <div class="scrolly">
@@ -193,7 +212,7 @@
                 </div>
                 <div class="node" data-node="claude" style="--x: 63.75%; --y: 32.5%">
                   <div class="node-block orb"><span class="pulse"></span><span class="ni">🧠</span></div>
-                  <div class="node-label"><b>Claude Opus 4.8</b><i>the researcher</i></div>
+                  <div class="node-label"><b>Claude Opus 4.8</b><i>the analyst</i></div>
                 </div>
                 <div class="node node-web" data-node="web" style="--x: 85%; --y: 20%">
                   <div class="web-tiles"><span></span><span></span><span></span><span></span></div>
@@ -205,7 +224,7 @@
                 </div>
 
                 <div class="mock-report" id="mockReport" aria-hidden="true">
-                  <div class="mr-head"><span class="mdot"></span> report.md</div>
+                  <div class="mr-head"><span class="mdot"></span> plan.md</div>
                   <div class="mr-body"></div>
                 </div>
               </div>
@@ -220,51 +239,51 @@
 
           <div class="steps" id="steps">
             <article class="step" data-step="1">
-              <span class="step-no">01</span><h4>You ask a question.</h4>
-              <p>You type something like <em>“What are the newest EV battery chemistries?”</em> and hit
-              run. Your browser packages it up and sends it off.</p>
+              <span class="step-no">01</span><h4>You describe what leaked.</h4>
+              <p>You type something like <em>“my passwords showed up in a data breach”</em>, tap the
+              data types that were exposed, and hit run. Your browser packages it up and sends it off.</p>
               <p class="step-tech">Browser → <code>POST /api/research</code></p>
             </article>
             <article class="step" data-step="2">
               <span class="step-no">02</span><h4>The nearest city catches it.</h4>
-              <p>The request lands at a Cloudflare Worker in the data center closest to you — one of
+              <p>Your situation lands at a Cloudflare Worker in the data center closest to you — one of
               300+ worldwide. No far-away server to wait on.</p>
               <p class="step-tech">Cloudflare edge · runs in milliseconds, near the user</p>
             </article>
             <article class="step" data-step="3">
-              <span class="step-no">03</span><h4>The Worker briefs the researcher.</h4>
-              <p>The Worker hands your question to Claude along with instructions: <em>research this,
-              cite your sources, write it clearly.</em></p>
+              <span class="step-no">03</span><h4>Claude triages your situation.</h4>
+              <p>The Worker hands your situation to Claude along with instructions: <em>stay calm,
+              prioritize, cite official sources, keep it plain.</em></p>
               <p class="step-tech">Worker → Anthropic API · <code>claude-opus-4-8</code></p>
             </article>
             <article class="step" data-step="4">
-              <span class="step-no">04</span><h4>Claude decides to look it up.</h4>
-              <p>Instead of guessing from memory, Claude chooses to search — like deciding to open a
-              browser and check. It writes its own search queries.</p>
-              <p class="step-tech">Native <code>web_search</code> tool · up to 5 searches</p>
+              <span class="step-no">04</span><h4>It looks up the official guidance.</h4>
+              <p>Instead of guessing, Claude searches — but only the official shelf: the FTC, CISA, the
+              credit bureaus, and other authorities. It writes its own queries.</p>
+              <p class="step-tech">Native <code>web_search</code> · allow-listed domains · up to 5 searches</p>
             </article>
             <article class="step" data-step="5">
-              <span class="step-no">05</span><h4>It reads the live web.</h4>
-              <p>Real pages come back — official docs, news, references. Claude pulls the relevant
-              passages and tracks where each fact came from.</p>
-              <p class="step-tech">Live results · each becomes a numbered citation</p>
+              <span class="step-no">05</span><h4>It assesses urgency.</h4>
+              <p>Real guidance comes back. Claude sorts what to do now from what can wait, and tracks
+              which official source backs each step.</p>
+              <p class="step-tech">Official results · each becomes a numbered citation</p>
             </article>
             <article class="step" data-step="6">
-              <span class="step-no">06</span><h4>The answer streams back.</h4>
-              <p>Every word flows back the moment it's written — Claude → Worker → your browser — like
-              a live broadcast, not a long wait.</p>
-              <p class="step-tech">Server-Sent Events (SSE) · token-by-token</p>
+              <span class="step-no">06</span><h4>Your plan streams back.</h4>
+              <p>Every step flows back the moment it's written — Claude → Worker → your browser —
+              prioritized into <em>do now</em>, <em>do soon</em>, and <em>keep doing</em>.</p>
+              <p class="step-tech">Server-Sent Events (SSE) · step-by-step</p>
             </article>
             <article class="step" data-step="7">
-              <span class="step-no">07</span><h4>Your screen fills in, live.</h4>
-              <p>You watch the pipeline light up and the cited report assemble itself — sources in the
-              margin, footnotes linking back to them.</p>
+              <span class="step-no">07</span><h4>You act on it.</h4>
+              <p>You watch the pipeline light up and a clear checklist assemble itself — each step
+              footnoted to the official source you can verify and follow.</p>
               <p class="step-tech">Rendered safely · model output escaped, then formatted</p>
             </article>
             <article class="step" data-step="8">
               <span class="step-no">08</span><h4>It's saved for next time.</h4>
-              <p>The finished report and its sources drop into the filing cabinet, so you can reopen
-              any past run from your history.</p>
+              <p>Your finished plan and its sources drop into the folder, so you can reopen any past
+              plan from your history and keep working through it.</p>
               <p class="step-tech">Cloudflare D1 · <code>runs</code> + <code>sources</code> tables</p>
             </article>
           </div>
@@ -300,7 +319,7 @@
           <article class="cast-card" style="--i: 3">
             <div class="cc-ico">⚡</div><h4>Redis + arq workers</h4>
             <p class="analogy">The ticket rail and the line cooks.</p>
-            <p class="tech">Queues each research job; workers run it and stream progress back.</p>
+            <p class="tech">Queues each breach-response job; workers run it and stream progress back.</p>
           </article>
           <article class="cast-card" style="--i: 4">
             <div class="cc-ico">☸️</div><h4>Kubernetes (EKS)</h4>
@@ -355,7 +374,7 @@
             <div class="bp-lane">
               <span class="bp-lane-label">Anthropic</span>
               <div class="bp-box">🧠 Claude Opus 4.8</div>
-              <div class="bp-box">🔎 web_search → live web</div>
+              <div class="bp-box">🔎 web_search → official guidance</div>
             </div>
           </div>
 
@@ -391,8 +410,8 @@
           </div>
         </div>
         <p class="bp-note" id="bpNote">
-          Running today: a single Cloudflare Worker, Claude Opus 4.8 with live web search, and a D1
-          database. No servers to manage.
+          Running today: a single Cloudflare Worker, Claude Opus 4.8 searching official guidance, and
+          a D1 database. No servers to manage.
         </p>
       </section>
 
@@ -437,14 +456,14 @@
       </section>
 
       <section class="ex-closing">
-        <h3>Now watch it for real.</h3>
-        <p>You've seen the moving parts. Ask Atlas a question and see them work.</p>
+        <h3>Now put it to work.</h3>
+        <p>You've seen the moving parts. Tell Firstline what happened and get your plan.</p>
         <a class="big-cta" href="#top" onclick="window.scrollTo({top:0,behavior:'smooth'});return false;">Back to the top ↑</a>
       </section>
     </div>
 
     <footer class="foot">
-      <span>Atlas · agentic research on Cloudflare Workers + D1 · Claude Opus 4.8 with live web search</span>
+      <span>Firstline · breach-response copilot on Cloudflare Workers + D1 · Claude Opus 4.8 with official-guidance search</span>
     </footer>
 
     <script type="module" src="/app.js"></script>

@@ -20,7 +20,11 @@ dependencies = [
     "langchain-core>=1.4.8",
     "langchain-anthropic>=1.4.8",
     "anthropic>=0.113",
+    "mcp>=1.2.0",
 ]
+
+[project.scripts]
+firstline-mcp = "atlas_api.mcp_server:main"
 
 [dependency-groups]
 dev = [
@@ -61,5 +65,9 @@ strict = true
 mypy_path = "src"
 
 [[tool.mypy.overrides]]
-module = ["langgraph.*", "langchain_anthropic.*"]
+module = ["langgraph.*", "langchain_anthropic.*", "mcp.*"]
 ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = ["atlas_api.mcp_server"]
+disallow_untyped_decorators = false

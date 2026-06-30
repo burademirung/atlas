@@ -11,9 +11,24 @@ const statusChip = $("#statusChip");
 const qecho = $("#qecho");
 const runBtn = $("#run");
 const qInput = $("#q");
+const chipsEl = $("#dataTypes");
 
 let reportBuffer = "";
 let running = false;
+
+/* ---------- data-type chips (what was exposed) ---------------------------- */
+function selectedDataTypes() {
+  if (!chipsEl) return [];
+  return Array.from(chipsEl.querySelectorAll(".chip.active")).map((c) => c.dataset.type);
+}
+if (chipsEl) {
+  for (const chip of chipsEl.querySelectorAll(".chip")) {
+    chip.addEventListener("click", () => {
+      const active = chip.classList.toggle("active");
+      chip.setAttribute("aria-pressed", String(active));
+    });
+  }
+}
 
 /* ---------- Turnstile (bot protection, optional) -------------------------- */
 let turnstileSitekey = null;
@@ -127,7 +142,11 @@ async function runResearch(question) {
     const resp = await fetch("/api/research", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ question, turnstileToken: getTurnstileToken() }),
+      body: JSON.stringify({
+        question,
+        dataTypes: selectedDataTypes(),
+        turnstileToken: getTurnstileToken(),
+      }),
     });
     if (!resp.ok || !resp.body) throw new Error("Request failed (" + resp.status + ")");
 

@@ -199,7 +199,7 @@
     const vLive = bpStage.querySelector(".bp-view-live");
     const vProd = bpStage.querySelector(".bp-view-prod");
     const NOTES = {
-      live: "Running today: a single Cloudflare Worker, Claude Opus 4.8 with live web search, and a D1 database. No servers to manage.",
+      live: "Running today: a single Cloudflare Worker, Claude Opus 4.8 searching official guidance, and a D1 database. No servers to manage.",
       prod: "The full production edition: a FastAPI backend and agent workers on Kubernetes (AWS EKS), PostgreSQL and Redis, all defined in Terraform and shipped by GitHub Actions.",
     };
     function show(view) {

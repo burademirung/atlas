@@ -41,7 +41,20 @@ export function renderMarkdown(md) {
         out.push("<ul>");
         inList = true;
       }
-      out.push(`<li>${inline(m[1])}</li>`);
+      // GitHub-style task list: "- [ ] text" / "- [x] text". The brackets are
+      // already HTML-escaped at this point, so match the escaped form and swap
+      // in a checkbox glyph. Stays XSS-safe (escape ran first).
+      const item = m[1];
+      const task = item.match(/^\[( |x|X)\]\s*(.*)$/);
+      if (task) {
+        const checked = task[1].toLowerCase() === "x";
+        out.push(
+          `<li class="task ${checked ? "done" : "todo"}">` +
+            `<span class="box">${checked ? "☑" : "☐"}</span>${inline(task[2])}</li>`,
+        );
+      } else {
+        out.push(`<li>${inline(item)}</li>`);
+      }
     } else if (line.trim() === "") {
       closeList();
     } else {

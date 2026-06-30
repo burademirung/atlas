@@ -32,6 +32,7 @@ def merge_sources(existing: list[Source], new: list[Source]) -> list[Source]:
 
 class ResearchState(TypedDict, total=False):
     question: str
+    data_types: list[str]
     subquestions: list[str]
     sources: Annotated[list[Source], merge_sources]
     claims: list[Claim]
