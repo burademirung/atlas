@@ -6,8 +6,11 @@ RUN npm install
 COPY . .
 RUN npm run build
 
-# Unprivileged nginx: runs as non-root (uid 101) on port 8080. Fixes Trivy DS-0002.
+# Unprivileged nginx: runs as non-root (uid 101) on port 8080.
 FROM nginxinc/nginx-unprivileged:1.27-alpine
+USER root
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 COPY --from=build /app/dist /usr/share/nginx/html
+# Explicit non-root USER in the final stage (Trivy DS-0002).
+USER 101
 EXPOSE 8080
