@@ -26,6 +26,8 @@ concurrency:
 jobs:
   deploy:
     name: wrangler deploy
+    # Skip (not fail) when no Cloudflare account/token is configured for the repo.
+    if: ${{ vars.CLOUDFLARE_ACCOUNT_ID != '' }}
     runs-on: ubuntu-24.04
     environment:
       name: cloudflare-production
