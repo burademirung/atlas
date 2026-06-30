@@ -103,7 +103,8 @@ jobs:
   # ---------------------------------------------------------------------------
   plan:
     name: plan (${{ matrix.env }})
-    if: github.event_name == 'push'
+    # Skip (not fail) when no Terraform plan role is configured for the repo.
+    if: ${{ github.event_name == 'push' && vars.AWS_TF_PLAN_ROLE_ARN != '' }}
     runs-on: ubuntu-24.04
     environment:
       name: infra-plan

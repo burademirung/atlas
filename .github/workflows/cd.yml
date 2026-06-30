@@ -36,6 +36,8 @@ jobs:
   # ---------------------------------------------------------------------------
   build:
     name: Build & push (${{ matrix.image.name }})
+    # Skip (not fail) when no cloud deploy role is configured for the repo.
+    if: ${{ vars.AWS_DEPLOY_ROLE_ARN != '' }}
     runs-on: ubuntu-24.04
     permissions:
       contents: read # checkout
@@ -129,6 +131,7 @@ jobs:
   deploy:
     name: Deploy to EKS (production)
     needs: build
+    if: ${{ vars.AWS_DEPLOY_ROLE_ARN != '' }}
     runs-on: ubuntu-24.04
     environment:
       name: production
