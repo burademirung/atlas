@@ -241,11 +241,26 @@ The full map is the [documentation index](docs/README.md) (organized by the
 - [`docs/security.md`](docs/security.md) — defense-in-depth security architecture (OWASP/NIST mapped)
 - [`docs/threat-model.md`](docs/threat-model.md) — attack paths + mitigations (prompt injection, denial-of-wallet, XSS, SSRF, authn/z, secrets, PII)
 
-**Decisions (ADRs)**
+**Decisions (ADRs)** — [`docs/adr/`](docs/adr/)
 
-- [`docs/adr/`](docs/adr/) — Architecture Decision Records (editions, LangGraph, Redis Streams, KEDA, per-env state)
+- [`0001-cloudflare-vs-aws-editions.md`](docs/adr/0001-cloudflare-vs-aws-editions.md) — why two editions (live Cloudflare vs production AWS)
+- [`0002-langgraph-multi-agent.md`](docs/adr/0002-langgraph-multi-agent.md) — why a LangGraph multi-agent graph
+- [`0003-sse-redis-streams-not-pubsub.md`](docs/adr/0003-sse-redis-streams-not-pubsub.md) — why Redis Streams (not Pub/Sub) behind SSE
+- [`0004-keda-for-queue-autoscaling.md`](docs/adr/0004-keda-for-queue-autoscaling.md) — why KEDA for queue-driven autoscaling
+- [`0005-terraform-per-env-state.md`](docs/adr/0005-terraform-per-env-state.md) — why per-environment Terraform state
+
+**Component guides** (per-directory READMEs)
+
+- [`apps/api/README.md`](apps/api/README.md) — the FastAPI service, LangGraph agents, and arq worker
+- [`infra/terraform/README.md`](infra/terraform/README.md) — the Terraform root + modules
+- [`infra/k8s/README.md`](infra/k8s/README.md) — the Kubernetes manifests overview
+- [`infra/k8s/atlas/README.md`](infra/k8s/atlas/README.md) — the Atlas Helm chart
+- [`.github/README.md`](.github/README.md) — the CI/CD workflows
 
 **Project meta**
 
-- [`CHANGELOG.md`](CHANGELOG.md) · [`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md) · [`docs/documentation-strategy.md`](docs/documentation-strategy.md) — why this doc set exists
+- [`README.md`](README.md) — this file · [`docs/README.md`](docs/README.md) — the documentation index
+- [`CHANGELOG.md`](CHANGELOG.md) — release history (Keep a Changelog)
+- [`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md) — Contributor Covenant
+- [`docs/documentation-strategy.md`](docs/documentation-strategy.md) — what docs this class of project needs, and why
 - [`docs/superpowers/specs/`](docs/superpowers/specs/) — the full design spec behind Atlas
