@@ -205,6 +205,7 @@ resource "aws_db_instance" "this" {
   maintenance_window      = var.maintenance_window
   copy_tags_to_snapshot   = true
 
+  # trivy:ignore:AWS-0177 module default is true (prod enforces it); dev opts out via var for `terraform destroy` teardown.
   deletion_protection       = var.deletion_protection
   skip_final_snapshot       = var.skip_final_snapshot
   final_snapshot_identifier = var.skip_final_snapshot ? null : "${var.name_prefix}-pg-final-${formatdate("YYYYMMDDhhmmss", timestamp())}"
