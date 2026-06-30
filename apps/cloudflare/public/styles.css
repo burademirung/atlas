@@ -269,7 +269,7 @@ body {
 .status-chip.error { background: #c0392b; }
 .qecho { color: var(--ink-dim); font-size: 13.5px; }
 
-.report { padding: 26px 30px 36px; line-height: 1.7; font-size: 15.5px; color: var(--ink); }
+.report { padding: 26px 30px 36px; line-height: 1.7; font-size: 15.5px; color: var(--ink); max-height: 68vh; overflow-y: auto; overscroll-behavior: contain; }
 .report .placeholder { color: var(--ink-faint); font-style: italic; }
 .report h1, .report h2, .report h3 {
   font-family: "Fraunces", serif;

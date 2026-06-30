@@ -76,7 +76,7 @@ html, body { margin: 0; background: var(--bg); color: var(--ink); font-family: "
 .status-chip.done { background: var(--green); }
 .status-chip.error, .status-chip.cancelled { background: #c0392b; }
 .qecho { color: var(--dim); font-size: 13.5px; }
-.report { padding: 26px 30px 36px; line-height: 1.7; font-size: 15.5px; }
+.report { padding: 26px 30px 36px; line-height: 1.7; font-size: 15.5px; max-height: 68vh; overflow-y: auto; overscroll-behavior: contain; }
 .report .placeholder { color: var(--faint); font-style: italic; }
 .report h1, .report h2, .report h3 { font-family: "Fraunces", serif; margin: 1.3em 0 .5em; line-height: 1.2; }
 .report h2 { font-size: 21px; }

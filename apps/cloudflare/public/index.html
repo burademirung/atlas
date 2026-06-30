@@ -270,6 +270,60 @@
         </div>
       </section>
 
+      <!-- PRODUCTION STACK (the full required toolkit, as first-class parts) -->
+      <section class="ex-cast ex-prod">
+        <div class="ex-head">
+          <p class="ex-eyebrow">Under the hood</p>
+          <h3>The production edition adds eight more</h3>
+          <p class="ex-sub" style="margin: 10px 0 0">
+            The live demo runs on Cloudflare. The full production edition runs the same idea on a
+            real cloud — and that's where the rest of the stack lives.
+          </p>
+        </div>
+        <div class="cast-grid prod-grid">
+          <article class="cast-card" style="--i: 0">
+            <div class="cc-ico">🐍</div><h4>Python · FastAPI</h4>
+            <p class="analogy">The kitchen that takes every order.</p>
+            <p class="tech">The async backend service — built from scratch, fully tested.</p>
+          </article>
+          <article class="cast-card" style="--i: 1">
+            <div class="cc-ico">🤖</div><h4>LangGraph agents</h4>
+            <p class="analogy">A team of specialists, each with one job.</p>
+            <p class="tech">Multi-agent graph: plan → search → verify → write, driven by Claude.</p>
+          </article>
+          <article class="cast-card" style="--i: 2">
+            <div class="cc-ico">🐘</div><h4>PostgreSQL</h4>
+            <p class="analogy">The system of record.</p>
+            <p class="tech">Stores users, runs, sources, and reports — the production database.</p>
+          </article>
+          <article class="cast-card" style="--i: 3">
+            <div class="cc-ico">⚡</div><h4>Redis + arq workers</h4>
+            <p class="analogy">The ticket rail and the line cooks.</p>
+            <p class="tech">Queues each research job; workers run it and stream progress back.</p>
+          </article>
+          <article class="cast-card" style="--i: 4">
+            <div class="cc-ico">☸️</div><h4>Kubernetes (EKS)</h4>
+            <p class="analogy">A building that adds rooms on demand.</p>
+            <p class="tech">Runs the API and workers; KEDA autoscales them on the queue.</p>
+          </article>
+          <article class="cast-card" style="--i: 5">
+            <div class="cc-ico">☁️</div><h4>AWS</h4>
+            <p class="analogy">The land the building sits on.</p>
+            <p class="tech">EKS, RDS Postgres, ElastiCache, S3, ECR — owned end to end.</p>
+          </article>
+          <article class="cast-card" style="--i: 6">
+            <div class="cc-ico">🌍</div><h4>Terraform</h4>
+            <p class="analogy">The blueprint that builds the land.</p>
+            <p class="tech">The entire cloud defined as code, per environment.</p>
+          </article>
+          <article class="cast-card" style="--i: 7">
+            <div class="cc-ico">🚀</div><h4>GitHub Actions</h4>
+            <p class="analogy">The crew that tests and ships.</p>
+            <p class="tech">CI/CD — lint, type-check, test, scan, build, and deploy on every change.</p>
+          </article>
+        </div>
+      </section>
+
       <!-- BLUEPRINT -->
       <section class="ex-blueprint">
         <div class="ex-head center">
