@@ -24,7 +24,7 @@ module "network" {
   single_nat_gateway = true # dev cost saver
   cluster_name       = local.cluster_name
   region             = var.region
-  enable_flow_logs   = false
+  enable_flow_logs   = true # VPC flow logs in every env (AVD-AWS-0178)
 
   tags = local.tags
 }
@@ -36,8 +36,8 @@ module "eks" {
   kubernetes_version = var.kubernetes_version
   subnet_ids         = module.network.private_subnet_ids
 
-  endpoint_public_access       = true
-  endpoint_public_access_cidrs = var.eks_public_access_cidrs
+  endpoint_public_access      = true
+  cluster_public_access_cidrs = var.eks_public_access_cidrs
 
   node_instance_types = ["t3.large"]
   node_capacity_type  = "ON_DEMAND"

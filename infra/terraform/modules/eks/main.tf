@@ -10,6 +10,31 @@
 
 data "aws_partition" "current" {}
 
+locals {
+  # Public endpoint is only enabled when explicitly turned on AND given a
+  # non-empty CIDR allow-list. This keeps 0.0.0.0/0 out of the default path.
+  public_endpoint_enabled = var.endpoint_public_access && length(var.cluster_public_access_cidrs) > 0
+}
+
+# --------------------- Secrets envelope-encryption CMK ---------------------
+# Dedicated CMK so Kubernetes Secrets are envelope-encrypted at the etcd layer
+# (AVD-AWS-0039 / CKV_AWS_58) rather than relying solely on EBS-level encryption.
+
+resource "aws_kms_key" "secrets" {
+  description             = "${var.cluster_name} EKS secrets envelope-encryption CMK"
+  deletion_window_in_days = 30
+  enable_key_rotation     = true
+
+  tags = merge(var.tags, {
+    Name = "${var.cluster_name}-eks-secrets-cmk"
+  })
+}
+
+resource "aws_kms_alias" "secrets" {
+  name          = "alias/${var.cluster_name}-eks-secrets"
+  target_key_id = aws_kms_key.secrets.key_id
+}
+
 # ------------------------------ Cluster IAM --------------------------------
 
 data "aws_iam_policy_document" "cluster_assume" {
@@ -49,11 +74,23 @@ resource "aws_eks_cluster" "this" {
 
   enabled_cluster_log_types = var.enabled_cluster_log_types
 
+  # Envelope-encrypt Kubernetes Secrets with a CMK (AVD-AWS-0039).
+  encryption_config {
+    provider {
+      key_arn = aws_kms_key.secrets.arn
+    }
+    resources = ["secrets"]
+  }
+
+  # Private access is always on. Public access is opt-in AND only ever reachable
+  # from an explicit CIDR allow-list — never 0.0.0.0/0 by default
+  # (AVD-AWS-0040 / AVD-AWS-0041). An empty cluster_public_access_cidrs list (the
+  # default) collapses to private-only regardless of endpoint_public_access.
   vpc_config {
     subnet_ids              = var.subnet_ids
     endpoint_private_access = true
-    endpoint_public_access  = var.endpoint_public_access
-    public_access_cidrs     = var.endpoint_public_access ? var.endpoint_public_access_cidrs : null
+    endpoint_public_access  = local.public_endpoint_enabled
+    public_access_cidrs     = local.public_endpoint_enabled ? var.cluster_public_access_cidrs : null
   }
 
   # Use the cluster's primary security group + IAM auth; admin entries are

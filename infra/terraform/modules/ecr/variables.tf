@@ -27,7 +27,7 @@ variable "scan_on_push" {
 }
 
 variable "kms_key_arn" {
-  description = "Optional KMS CMK ARN for repository encryption. When null, AES256 (SSE-S3 equivalent) is used."
+  description = "Optional existing KMS CMK ARN for repository encryption (AVD-AWS-0033). When null, the module creates a dedicated CMK; repositories are always KMS-encrypted."
   type        = string
   default     = null
 }

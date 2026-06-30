@@ -15,15 +15,20 @@ variable "subnet_ids" {
 }
 
 variable "endpoint_public_access" {
-  description = "Whether the EKS API server is reachable from the public internet. Keep false + use private access / a bastion in prod where possible."
+  description = "Allow the EKS API server to be reachable from the public internet. Kept configurable because CI/operators may need it, but it only takes effect when cluster_public_access_cidrs is non-empty. Private access is always enabled."
   type        = bool
   default     = true
 }
 
-variable "endpoint_public_access_cidrs" {
-  description = "CIDRs allowed to reach the public API endpoint when endpoint_public_access is true."
+variable "cluster_public_access_cidrs" {
+  description = "Explicit CIDR allow-list for the public API endpoint. Default [] means private-only (no public endpoint). Set a tight list (office/VPN/CI egress) to opt in — never 0.0.0.0/0."
   type        = list(string)
-  default     = ["0.0.0.0/0"]
+  default     = []
+
+  validation {
+    condition     = !contains(var.cluster_public_access_cidrs, "0.0.0.0/0")
+    error_message = "cluster_public_access_cidrs must not contain 0.0.0.0/0; restrict the EKS public endpoint to known CIDRs."
+  }
 }
 
 variable "enabled_cluster_log_types" {

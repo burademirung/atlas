@@ -48,10 +48,13 @@ resource "aws_internet_gateway" "this" {
 resource "aws_subnet" "public" {
   count = var.az_count
 
-  vpc_id                  = aws_vpc.this.id
-  cidr_block              = local.public_subnet_cidrs[count.index]
-  availability_zone       = local.azs[count.index]
-  map_public_ip_on_launch = true
+  vpc_id            = aws_vpc.this.id
+  cidr_block        = local.public_subnet_cidrs[count.index]
+  availability_zone = local.azs[count.index]
+  # No auto-assigned public IPs (AVD-AWS-0164). The only public-facing resources
+  # here are the NAT gateways (own EIPs) and ALBs provisioned by the AWS Load
+  # Balancer Controller (own addressing); neither relies on subnet auto-assign.
+  map_public_ip_on_launch = false
 
   tags = merge(var.tags, {
     Name                     = "${var.name_prefix}-public-${local.azs[count.index]}"
@@ -174,12 +177,14 @@ resource "aws_security_group" "vpc_endpoints" {
     cidr_blocks = [aws_vpc.this.cidr_block]
   }
 
+  # Interface endpoints only ever serve HTTPS back into the VPC; scope egress to
+  # 443 within the VPC CIDR rather than all ports/all protocols (AVD-AWS-0104).
   egress {
-    description = "Allow all egress (endpoint responses)"
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
+    description = "HTTPS responses to the VPC CIDR"
+    from_port   = 443
+    to_port     = 443
+    protocol    = "tcp"
+    cidr_blocks = [aws_vpc.this.cidr_block]
   }
 
   tags = merge(var.tags, {
@@ -236,11 +241,70 @@ resource "aws_vpc_endpoint" "interface" {
 
 # ------------------------------- Flow logs ---------------------------------
 
+data "aws_caller_identity" "current" {}
+
+data "aws_partition" "current" {}
+
+# CMK encrypting the flow-log group (AVD-AWS-0017). The key policy grants the
+# regional CloudWatch Logs service principal use of the key, scoped to this log
+# group's ARN. The ARN is built from identity data (not the resource) to avoid a
+# dependency cycle between the key and the log group.
+resource "aws_kms_key" "flow_logs" {
+  count = var.enable_flow_logs ? 1 : 0
+
+  description             = "${var.name_prefix} VPC flow-log group encryption CMK"
+  deletion_window_in_days = 30
+  enable_key_rotation     = true
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid       = "EnableAccountAdmin"
+        Effect    = "Allow"
+        Principal = { AWS = "arn:${data.aws_partition.current.partition}:iam::${data.aws_caller_identity.current.account_id}:root" }
+        Action    = "kms:*"
+        Resource  = "*"
+      },
+      {
+        Sid       = "AllowCloudWatchLogs"
+        Effect    = "Allow"
+        Principal = { Service = "logs.${var.region}.amazonaws.com" }
+        Action = [
+          "kms:Encrypt",
+          "kms:Decrypt",
+          "kms:ReEncrypt*",
+          "kms:GenerateDataKey*",
+          "kms:DescribeKey",
+        ]
+        Resource = "*"
+        Condition = {
+          ArnEquals = {
+            "kms:EncryptionContext:aws:logs:arn" = "arn:${data.aws_partition.current.partition}:logs:${var.region}:${data.aws_caller_identity.current.account_id}:log-group:/aws/vpc/${var.name_prefix}/flow-logs"
+          }
+        }
+      },
+    ]
+  })
+
+  tags = merge(var.tags, {
+    Name = "${var.name_prefix}-flow-logs-cmk"
+  })
+}
+
+resource "aws_kms_alias" "flow_logs" {
+  count = var.enable_flow_logs ? 1 : 0
+
+  name          = "alias/${var.name_prefix}-flow-logs"
+  target_key_id = aws_kms_key.flow_logs[0].key_id
+}
+
 resource "aws_cloudwatch_log_group" "flow" {
   count = var.enable_flow_logs ? 1 : 0
 
   name              = "/aws/vpc/${var.name_prefix}/flow-logs"
   retention_in_days = var.flow_log_retention_days
+  kms_key_id        = aws_kms_key.flow_logs[0].arn
 
   tags = var.tags
 }

@@ -36,8 +36,8 @@ module "eks" {
   kubernetes_version = var.kubernetes_version
   subnet_ids         = module.network.private_subnet_ids
 
-  endpoint_public_access       = true
-  endpoint_public_access_cidrs = var.eks_public_access_cidrs
+  endpoint_public_access      = true
+  cluster_public_access_cidrs = var.eks_public_access_cidrs
 
   node_instance_types = ["m6i.large"]
   node_capacity_type  = "ON_DEMAND"

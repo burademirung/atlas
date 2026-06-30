@@ -33,6 +33,12 @@ variable "abort_incomplete_multipart_days" {
   default     = 7
 }
 
+variable "access_log_expiration_days" {
+  description = "Expire server access logs in the dedicated log bucket after this many days."
+  type        = number
+  default     = 90
+}
+
 variable "tags" {
   description = "Additional tags merged onto every resource in this module."
   type        = map(string)

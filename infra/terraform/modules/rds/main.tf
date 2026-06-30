@@ -165,6 +165,10 @@ resource "aws_iam_role_policy_attachment" "monitoring" {
 # ------------------------------- Instance ----------------------------------
 
 resource "aws_db_instance" "this" {
+  # deletion_protection defaults to true and prod enforces it; atlas-dev
+  # deliberately sets it false so the throwaway dev stack can be torn down with
+  # `terraform destroy`. Accepting AVD-AWS-0177 / CKV_AWS_293 for that case only.
+  #checkov:skip=CKV_AWS_293:dev intentionally disables RDS deletion protection for teardown; prod enforces deletion_protection=true
   identifier = "${var.name_prefix}-pg"
 
   engine         = "postgres"
@@ -178,6 +182,11 @@ resource "aws_db_instance" "this" {
 
   storage_encrypted = true
   kms_key_id        = aws_kms_key.rds.arn
+
+  # Allow IAM-based DB auth alongside the password in Secrets Manager
+  # (AVD-AWS-0176): lets workloads use short-lived IAM tokens instead of a
+  # long-lived password.
+  iam_database_authentication_enabled = var.iam_database_authentication_enabled
 
   db_name  = var.db_name
   username = var.master_username

@@ -33,9 +33,9 @@ variable "kubernetes_version" {
 }
 
 variable "eks_public_access_cidrs" {
-  description = "CIDRs allowed to reach the public EKS API endpoint."
+  description = "CIDR allow-list for the public EKS API endpoint. Default [] keeps the endpoint private-only; set your office/VPN/CI egress CIDRs to opt in. Must not be 0.0.0.0/0."
   type        = list(string)
-  default     = ["0.0.0.0/0"]
+  default     = []
 }
 
 # --------------------------- Cloudflare -------------------------------------

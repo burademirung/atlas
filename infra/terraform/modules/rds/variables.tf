@@ -61,9 +61,15 @@ variable "multi_az" {
 }
 
 variable "deletion_protection" {
-  description = "Block accidental deletion. true in prod."
+  description = "Block accidental deletion (AVD-AWS-0177). Safe default true; dev overrides to false for teardown convenience."
   type        = bool
-  default     = false
+  default     = true
+}
+
+variable "iam_database_authentication_enabled" {
+  description = "Enable IAM database authentication (AVD-AWS-0176) so workloads can use short-lived IAM tokens."
+  type        = bool
+  default     = true
 }
 
 variable "backup_retention_period" {

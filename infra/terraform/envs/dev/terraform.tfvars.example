@@ -8,8 +8,9 @@ region             = "us-east-1"
 vpc_cidr           = "10.10.0.0/16"
 kubernetes_version = "1.31"
 
-# Lock the EKS public API endpoint down to your office/VPN egress in real use.
-eks_public_access_cidrs = ["0.0.0.0/0"]
+# Private-only by default. To use the public API endpoint, list your office/VPN
+# egress CIDRs here (never 0.0.0.0/0), e.g. ["198.51.100.10/32"].
+eks_public_access_cidrs = []
 
 # ---- Cloudflare ----
 cloudflare_account_id = "0123456789abcdef0123456789abcdef"

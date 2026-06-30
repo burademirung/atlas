@@ -88,14 +88,18 @@ jobs:
           framework: terraform
           quiet: true
           output_format: cli,sarif
-          output_file_path: console,checkov.sarif
+          # The second token maps to the `sarif` output: Checkov treats it as a
+          # directory and writes <dir>/results_sarif.sarif inside it. Write it
+          # under the env dir so the upload step below reads the same path.
+          output_file_path: console,infra/terraform/envs/${{ matrix.env }}/checkov_sarif
           soft_fail: false
 
       - name: Upload Checkov SARIF
+        # Upload even when the Checkov gate fails so findings still surface.
         if: ${{ !cancelled() }}
         uses: github/codeql-action/upload-sarif@b6a472f63d85b9c78a3ac5e89422239fc15e9b3c # v3.28.1
         with:
-          sarif_file: infra/terraform/envs/${{ matrix.env }}/checkov.sarif
+          sarif_file: infra/terraform/envs/${{ matrix.env }}/checkov_sarif/results_sarif.sarif
           category: checkov-${{ matrix.env }}
 
   # ---------------------------------------------------------------------------

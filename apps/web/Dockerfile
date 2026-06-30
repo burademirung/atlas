@@ -14,3 +14,8 @@ COPY --from=build /app/dist /usr/share/nginx/html
 # Explicit non-root USER in the final stage (Trivy DS-0002).
 USER 101
 EXPOSE 8080
+
+# Liveness probe for the static server (Trivy DS-0026). busybox wget ships in the
+# alpine base; runs as the non-root uid 101 against the unprivileged 8080 port.
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+  CMD wget -q -O /dev/null http://127.0.0.1:8080/ || exit 1

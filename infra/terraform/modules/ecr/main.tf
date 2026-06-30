@@ -4,6 +4,31 @@
 # untagged layers and caps tagged history. §10.
 # ---------------------------------------------------------------------------
 
+# KMS encryption at rest for the repositories (AVD-AWS-0033). A dedicated CMK is
+# created unless the caller supplies an existing one via kms_key_arn.
+resource "aws_kms_key" "ecr" {
+  count = var.kms_key_arn == null ? 1 : 0
+
+  description             = "${var.name_prefix} ECR repository encryption CMK"
+  deletion_window_in_days = 30
+  enable_key_rotation     = true
+
+  tags = merge(var.tags, {
+    Name = "${var.name_prefix}-ecr-cmk"
+  })
+}
+
+resource "aws_kms_alias" "ecr" {
+  count = var.kms_key_arn == null ? 1 : 0
+
+  name          = "alias/${var.name_prefix}-ecr"
+  target_key_id = aws_kms_key.ecr[0].key_id
+}
+
+locals {
+  ecr_kms_key_arn = var.kms_key_arn != null ? var.kms_key_arn : aws_kms_key.ecr[0].arn
+}
+
 resource "aws_ecr_repository" "this" {
   for_each = toset(var.repositories)
 
@@ -16,8 +41,8 @@ resource "aws_ecr_repository" "this" {
   }
 
   encryption_configuration {
-    encryption_type = var.kms_key_arn == null ? "AES256" : "KMS"
-    kms_key         = var.kms_key_arn
+    encryption_type = "KMS"
+    kms_key         = local.ecr_kms_key_arn
   }
 
   tags = merge(var.tags, {
