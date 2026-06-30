@@ -57,7 +57,7 @@
       8: { active: ["edge", "d1", "pg"], wire: "w-edge-d1" },
       9: { active: ["docker", "api", "lang"], wire: null },
       10: { active: ["k8s", "docker", "api", "redis", "lang"], wire: null },
-      11: { active: ["aws", "k8s", "pg"], wire: null },
+      11: { active: ["aws", "k8s", "pg", "redis"], wire: null },
       12: { active: ["tf", "aws"], wire: null },
       13: { active: ["gha", "test", "edge", "api"], wire: null },
       14: { active: ["otel", "api", "lang", "k8s"], wire: null },
