@@ -162,6 +162,10 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          # Full history so gitleaks can resolve the PR base..head commit range
+          # (a shallow checkout makes the parent commit unknown -> git error).
+          fetch-depth: 0
 
       # ---- Gate 1: dependency / filesystem vulnerabilities -----------------
       # Fails the build on any fixable CRITICAL/HIGH finding in lockfiles
