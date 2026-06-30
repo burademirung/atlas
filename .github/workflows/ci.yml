@@ -290,6 +290,6 @@ jobs:
       security-events: write
     steps:
       - name: Bandit scan (SARIF -> code scanning)
-        uses: PyCQA/bandit-action@ca64e96d362b1764a98d841aaf3a4b1e2d690c7b # v1
+        uses: PyCQA/bandit-action@8a1b30610f61f3f792fe7556e888c9d7dffa52de # v1
         with:
           targets: apps/api/src
