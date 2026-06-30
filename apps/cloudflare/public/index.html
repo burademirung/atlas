@@ -14,8 +14,8 @@
       href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,900&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="/styles.css?v=14" />
-    <link rel="stylesheet" href="/architecture.css?v=14" />
+    <link rel="stylesheet" href="/styles.css?v=15" />
+    <link rel="stylesheet" href="/architecture.css?v=15" />
   </head>
   <body>
     <div class="grain" aria-hidden="true"></div>
@@ -285,19 +285,25 @@
               <div class="step-dots" id="stepDots"></div>
               <button id="nextStep" class="step-btn" aria-label="Next step">›</button>
             </div>
+            <p class="stage-legend">
+              This map shows the full <b>production</b> stack. The <b>live</b> Cloudflare demo runs a
+              leaner subset — Browser → Cloudflare Worker → Claude (web search) → SSE → D1 — without the
+              queue, agent workers, or Postgres.
+            </p>
           </div>
 
           <div class="steps" id="steps">
             <article class="step" data-step="1">
               <span class="step-no">01</span><h4>You describe what leaked.</h4>
-              <p>In the app — a React + Vite single-page app — you type something like <em>“my passwords
-              showed up in a data breach”</em>, tap the data types exposed, and hit run.</p>
-              <p class="step-tech">React · Vite SPA → <code>POST /api/research</code></p>
+              <p>In the browser app — a React + Vite SPA in production, a lightweight build in the live
+              demo — you type something like <em>“my passwords showed up in a data breach”</em>, tap the
+              data types exposed, and hit run.</p>
+              <p class="step-tech">Browser SPA → <code>POST /api/research</code></p>
             </article>
             <article class="step" data-step="2">
               <span class="step-no">02</span><h4>It reaches the front door.</h4>
               <p>It lands at the edge — a Cloudflare Worker, or a FastAPI service in production — but first
-              it's screened: rate limits, a bot check, and allow-listing before anything runs.</p>
+              it's screened: rate limits and a bot check before anything runs.</p>
               <p class="step-tech">Cloudflare Worker / FastAPI · Turnstile · rate limit</p>
             </article>
             <article class="step" data-step="3">
@@ -367,10 +373,11 @@
               <p class="step-tech">Testing · GitHub Actions · CI/CD via OIDC</p>
             </article>
             <article class="step" data-step="14">
-              <span class="step-no">14</span><h4>And watched in production.</h4>
-              <p>Once live, every run is traced and measured — so latency, errors, and token cost are
-              visible, not guessed. OpenTelemetry exports it all to your dashboards.</p>
-              <p class="step-tech">OpenTelemetry · GenAI semconv · Prometheus</p>
+              <span class="step-no">14</span><h4>And built to be watched.</h4>
+              <p>The production design instruments every run with OpenTelemetry — so latency, errors, and
+              token cost can be traced and measured on dashboards, not guessed. <em>(Designed, not yet
+              wired in — the live demo keeps it lean.)</em></p>
+              <p class="step-tech">OpenTelemetry · GenAI semconv · Prometheus — planned</p>
             </article>
           </div>
         </div>
@@ -544,7 +551,7 @@
       <span>Firstline · breach-response copilot on Cloudflare Workers + D1 · Claude Opus 4.8 with official-guidance search</span>
     </footer>
 
-    <script type="module" src="/app.js?v=14"></script>
-    <script src="/architecture.js?v=14"></script>
+    <script type="module" src="/app.js?v=15"></script>
+    <script src="/architecture.js?v=15"></script>
   </body>
 </html>
