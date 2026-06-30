@@ -86,4 +86,4 @@ services:
     depends_on:
       api:
         condition: service_started
-    ports: ["8081:80"]
+    ports: ["8081:8080"]

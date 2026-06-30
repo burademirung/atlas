@@ -177,7 +177,10 @@ jobs:
           format: table
 
       # ---- Gate 2: IaC / config misconfiguration --------------------------
-      # Scans Dockerfiles, Helm, Terraform, Kubernetes manifests.
+      # Scans app Dockerfiles, Helm, and Kubernetes manifests. Terraform is
+      # gated separately and more thoroughly in terraform.yml (Trivy IaC +
+      # Checkov, with module context), so it is skipped here to avoid redundant
+      # double-gating and eval-limited findings on the env modules.
       - name: Trivy config (IaC) scan (gate)
         uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
@@ -185,6 +188,7 @@ jobs:
           severity: CRITICAL,HIGH
           exit-code: "1"
           format: table
+          skip-dirs: infra/terraform
 
       # ---- Visibility: upload SARIF (non-blocking) ------------------------
       - name: Trivy filesystem scan (SARIF)
