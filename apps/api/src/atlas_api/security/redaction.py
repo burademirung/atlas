@@ -31,7 +31,9 @@ EMAIL_TOKEN = "[redacted-email]"  # noqa: S105 - redaction placeholder, not a se
 PHONE_TOKEN = "[redacted-phone]"  # noqa: S105 - redaction placeholder, not a secret
 
 # Email — handled first so digits inside an address are not re-matched as SSN/CC.
-_EMAIL_RE = re.compile(r"[A-Za-z0-9._%+\-]+@[A-Za-z0-9.\-]+\.[A-Za-z]{2,}")
+# ReDoS-safe: '.' is the fixed separator between label runs and is NOT in the
+# repeated class, so there is no ambiguous backtracking (CodeQL py/polynomial-redos).
+_EMAIL_RE = re.compile(r"[A-Za-z0-9._%+\-]+@[A-Za-z0-9\-]+(?:\.[A-Za-z0-9\-]+)+")
 # US SSN in its canonical dashed/spaced 3-2-4 grouping.
 _SSN_RE = re.compile(r"\b\d{3}[-\s]\d{2}[-\s]\d{4}\b")
 # Credit-card-like: 13-19 digits, optionally separated by spaces or dashes.
